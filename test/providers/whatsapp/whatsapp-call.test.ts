@@ -36,11 +36,11 @@ describe("WhatsAppCall initial state", () => {
   });
 
   it("default mode is full-duplex", () => {
-    expect(makeCall().call.mode).toBe("full-duplex");
+    expect(makeCall().call.mode()).toBe("full-duplex");
   });
 
   it("no active media initially", () => {
-    expect(makeCall().call.activeMedia.size).toBe(0);
+    expect(makeCall().call.media().size).toBe(0);
   });
 
   it("id is derived from the callId in the event", () => {
@@ -55,7 +55,7 @@ describe("WhatsAppCall initial state", () => {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppCall accept()", () => {
-  it("calls manager.answerCall with the callId", async () => {
+  it("calls manager.answer with the callId", async () => {
     const { call, manager } = makeCall();
     await call.accept();
     expect(manager.answeredCalls).toHaveLength(1);
@@ -86,14 +86,14 @@ describe("WhatsAppCall accept()", () => {
   it("activates audio by default", async () => {
     const { call } = makeCall();
     await call.accept();
-    expect(call.activeMedia.has("audio")).toBe(true);
+    expect(call.media().has("audio")).toBe(true);
   });
 
   it("activates the specified mediaTypes", async () => {
     const { call } = makeCall();
     await call.accept({ mediaTypes: ["audio", "video"] });
-    expect(call.activeMedia.has("audio")).toBe(true);
-    expect(call.activeMedia.has("video")).toBe(true);
+    expect(call.media().has("audio")).toBe(true);
+    expect(call.media().has("video")).toBe(true);
   });
 
   it("throws CallError when already connected", async () => {
@@ -104,7 +104,7 @@ describe("WhatsAppCall accept()", () => {
 
   it("wraps manager errors as CallError.mediaFailure", async () => {
     const { call, manager } = makeCall();
-    manager.answerCallError = new Error("network unavailable");
+    manager.answerError = new Error("network unavailable");
     await expect(call.accept()).rejects.toSatisfy(
       (e: unknown) => e instanceof CallError && e.code === "media-failure",
     );
@@ -116,7 +116,7 @@ describe("WhatsAppCall accept()", () => {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppCall reject()", () => {
-  it("calls manager.rejectCall with callId", async () => {
+  it("calls manager.reject with callId", async () => {
     const { call, manager } = makeCall();
     await call.reject("busy");
     expect(manager.rejectedCalls).toHaveLength(1);
@@ -136,7 +136,7 @@ describe("WhatsAppCall reject()", () => {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppCall hangup()", () => {
-  it("calls manager.endCall", async () => {
+  it("calls manager.end", async () => {
     const { call, manager } = makeCall();
     await call.accept();
     await call.hangup();
@@ -152,27 +152,27 @@ describe("WhatsAppCall hangup()", () => {
 });
 
 // ---------------------------------------------------------------------------
-// upgradeMode / upgradeMedia
+// mode / media
 // ---------------------------------------------------------------------------
 
-describe("WhatsAppCall upgradeMode/upgradeMedia", () => {
-  it("upgradeMode changes the mode", async () => {
+describe("WhatsAppCall mode/media", () => {
+  it("mode changes the mode", async () => {
     const { call } = makeCall();
     await call.accept();
-    await call.upgradeMode("listen-only");
-    expect(call.mode).toBe("listen-only");
+    await call.mode("listen-only");
+    expect(call.mode()).toBe("listen-only");
   });
 
-  it("upgradeMode throws when not connected", async () => {
+  it("mode throws when not connected", async () => {
     const { call } = makeCall();
-    await expect(call.upgradeMode("talkback")).rejects.toBeInstanceOf(CallError);
+    await expect(call.mode("talkback")).rejects.toBeInstanceOf(CallError);
   });
 
-  it("upgradeMedia adds new types", async () => {
+  it("media adds new types", async () => {
     const { call } = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    await call.upgradeMedia(["audio", "video"]);
-    expect(call.activeMedia.has("video")).toBe(true);
+    await call.media(["audio", "video"]);
+    expect(call.media().has("video")).toBe(true);
   });
 });
 
@@ -207,21 +207,21 @@ describe("WhatsAppCall external state changes", () => {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppCall media streams", () => {
-  it("getMediaStream returns null before accept", () => {
-    expect(makeCall().call.getMediaStream("audio")).toBeNull();
+  it("stream returns null before accept", () => {
+    expect(makeCall().call.stream("audio")).toBeNull();
   });
 
-  it("getMediaStream returns a stream after accept", async () => {
+  it("stream returns a stream after accept", async () => {
     const { call } = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    expect(call.getMediaStream("audio")).not.toBeNull();
+    expect(call.stream("audio")).not.toBeNull();
   });
 
   it("pushed audio chunks can be read from the stream", async () => {
     const { call, manager } = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
 
-    const stream = call.getMediaStream("audio");
+    const stream = call.stream("audio");
     expect(stream).not.toBeNull();
 
     // Push a chunk and then end the stream
@@ -235,7 +235,7 @@ describe("WhatsAppCall media streams", () => {
     expect(chunks[0]!.toString()).toBe("hello-audio");
   });
 
-  it("sendMedia delegates to manager.sendAudio", async () => {
+  it("send delegates to manager.send", async () => {
     const { call, manager } = makeCall();
     await call.accept();
 
@@ -243,7 +243,7 @@ describe("WhatsAppCall media streams", () => {
       yield Buffer.from("outbound-audio");
     }
 
-    await call.sendMedia(gen(), "audio");
+    await call.send(gen(), "audio");
     expect(manager.sentAudio).toHaveLength(1);
     expect(manager.sentAudio[0]!.chunk.toString()).toBe("outbound-audio");
   });
@@ -277,8 +277,8 @@ describe("WhatsAppCall text channel", () => {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppCall agent bridge", () => {
-  it("getAgentBridge returns the same instance", () => {
+  it("agent returns the same instance", () => {
     const { call } = makeCall();
-    expect(call.getAgentBridge()).toBe(call.getAgentBridge());
+    expect(call.agent()).toBe(call.agent());
   });
 });

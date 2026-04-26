@@ -2,8 +2,8 @@
  * Integration test: full agent-bridge round-trip.
  *
  * Exercises the complete path:
- *   triggerIncoming → accept → attach STT/TTS → simulateVoiceInput
- *   → onVoiceInput callback → injectTTS → TTS.synthesize → sendMedia
+ *   ring → accept → attach STT/TTS → speak
+ *   → onSpeech callback → say → TTS.synthesize → send
  */
 import { describe, expect, it, vi } from "vitest";
 import type { MediaSource, TTSOptions } from "../../src/types.js";
@@ -43,52 +43,52 @@ function makeSTT(): {
 // Round-trip: voice input → STT callback
 // ---------------------------------------------------------------------------
 
-describe("AgentBridge onVoiceInput", () => {
-  it("fires callback when simulateVoiceInput is called", () => {
+describe("AgentBridge onSpeech", () => {
+  it("fires callback when speak is called", () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
+    const call = provider.ring(ENDPOINT);
 
     const captured: Array<{ t: string; c: number }> = [];
-    call.getAgentBridge().onVoiceInput((t, c) => captured.push({ t, c }));
+    call.agent().onSpeech((t, c) => captured.push({ t, c }));
 
-    provider.simulateVoiceInput(call.id, "what time is it", 0.88);
+    provider.speak(call.id, "what time is it", 0.88);
 
     expect(captured).toEqual([{ t: "what time is it", c: 0.88 }]);
   });
 
   it("multiple callbacks all fire", () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
-    const bridge = call.getAgentBridge();
+    const call = provider.ring(ENDPOINT);
+    const bridge = call.agent();
 
     const results: string[] = [];
-    bridge.onVoiceInput((t) => results.push(`a:${t}`));
-    bridge.onVoiceInput((t) => results.push(`b:${t}`));
+    bridge.onSpeech((t) => results.push(`a:${t}`));
+    bridge.onSpeech((t) => results.push(`b:${t}`));
 
-    provider.simulateVoiceInput(call.id, "hello");
+    provider.speak(call.id, "hello");
 
     expect(results).toEqual(["a:hello", "b:hello"]);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Round-trip: injectTTS → TTS.synthesize → sendMedia
+// Round-trip: say → TTS.synthesize → send
 // ---------------------------------------------------------------------------
 
-describe("AgentBridge injectTTS", () => {
+describe("AgentBridge say", () => {
   it("calls TTS provider and injects audio into the call", async () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
+    const call = provider.ring(ENDPOINT);
     await call.accept();
 
     const { provider: tts, synthesizeSpy } = makeTTS();
-    call.getAgentBridge().setTTSProvider(tts);
+    call.agent().setTTS(tts);
 
-    await call.getAgentBridge().injectTTS("Hello, caller");
+    await call.agent().say("Hello, caller");
 
     expect(synthesizeSpy).toHaveBeenCalledWith("Hello, caller", undefined);
 
-    const sent = call.getSentMedia();
+    const sent = call.sent();
     expect(sent).toHaveLength(1);
     expect(sent[0]!.type).toBe("audio");
     expect(sent[0]!.chunks[0]!.toString()).toBe("tts:Hello, caller");
@@ -96,46 +96,46 @@ describe("AgentBridge injectTTS", () => {
 
   it("no-ops gracefully when no TTS provider is set", async () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
+    const call = provider.ring(ENDPOINT);
     await call.accept();
 
     // No TTS provider set — should not throw
-    await expect(call.getAgentBridge().injectTTS("hello")).resolves.toBeUndefined();
-    expect(call.getSentMedia()).toHaveLength(0);
+    await expect(call.agent().say("hello")).resolves.toBeUndefined();
+    expect(call.sent()).toHaveLength(0);
   });
 
   it("passes TTSOptions through to the provider", async () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
+    const call = provider.ring(ENDPOINT);
     await call.accept();
 
     const { provider: tts, synthesizeSpy } = makeTTS();
-    call.getAgentBridge().setTTSProvider(tts);
+    call.agent().setTTS(tts);
 
     const opts: TTSOptions = { voice: "en-US", speed: 1.2 };
-    await call.getAgentBridge().injectTTS("speak", opts);
+    await call.agent().say("speak", opts);
 
     expect(synthesizeSpy).toHaveBeenCalledWith("speak", opts);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Round-trip: injectAudio → sendMedia
+// Round-trip: play → send
 // ---------------------------------------------------------------------------
 
-describe("AgentBridge injectAudio", () => {
+describe("AgentBridge play", () => {
   it("sends the audio stream directly as media", async () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
+    const call = provider.ring(ENDPOINT);
     await call.accept();
 
     async function* rawAudio(): AsyncGenerator<Buffer> {
       yield Buffer.from("raw-audio-chunk");
     }
 
-    await call.getAgentBridge().injectAudio(rawAudio());
+    await call.agent().play(rawAudio());
 
-    const sent = call.getSentMedia();
+    const sent = call.sent();
     expect(sent).toHaveLength(1);
     expect(sent[0]!.type).toBe("audio");
     expect(sent[0]!.chunks[0]!.toString()).toBe("raw-audio-chunk");
@@ -149,30 +149,30 @@ describe("AgentBridge injectAudio", () => {
 describe("Full agent round-trip", () => {
   it("voice input triggers agent TTS response", async () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
+    const call = provider.ring(ENDPOINT);
     await call.accept();
 
-    const bridge = call.getAgentBridge();
+    const bridge = call.agent();
     const { provider: tts } = makeTTS("response");
-    bridge.setTTSProvider(tts);
+    bridge.setTTS(tts);
 
     // Simulate the agent pattern: react to voice, inject TTS response
     const agentReplied: string[] = [];
-    bridge.onVoiceInput(async (transcript) => {
+    bridge.onSpeech(async (transcript) => {
       agentReplied.push(transcript);
-      await bridge.injectTTS(`You said: ${transcript}`);
+      await bridge.say(`You said: ${transcript}`);
     });
 
     // Trigger voice input
-    provider.simulateVoiceInput(call.id, "whats the weather");
+    provider.speak(call.id, "whats the weather");
 
-    // The onVoiceInput callback is async (fire-and-forget from the bridge's
+    // The onSpeech callback is async (fire-and-forget from the bridge's
     // perspective). setImmediate drains all pending microtasks so the async
-    // generator inside injectTTS fully completes before we assert.
+    // generator inside say fully completes before we assert.
     await new Promise<void>((resolve) => setImmediate(resolve));
 
     expect(agentReplied).toEqual(["whats the weather"]);
-    const sent = call.getSentMedia();
+    const sent = call.sent();
     expect(sent).toHaveLength(1);
     expect(sent[0]!.chunks[0]!.toString()).toBe("response:You said: whats the weather");
   });
@@ -183,16 +183,16 @@ describe("Full agent round-trip", () => {
 // ---------------------------------------------------------------------------
 
 describe("AgentBridge STT provider", () => {
-  it("setSTTProvider can be changed at runtime", () => {
+  it("setSTT can be changed at runtime", () => {
     const provider = new MockVoiceProvider();
-    const call = provider.triggerIncoming(ENDPOINT);
-    const bridge = call.getAgentBridge();
+    const call = provider.ring(ENDPOINT);
+    const bridge = call.agent();
 
     const { provider: stt1 } = makeSTT();
     const { provider: stt2 } = makeSTT();
 
-    bridge.setSTTProvider(stt1);
-    bridge.setSTTProvider(stt2); // replace
+    bridge.setSTT(stt1);
+    bridge.setSTT(stt2); // replace
 
     // Just verify no error — the provider is stored
     // Actual transcription is exercised by WhatsApp provider tests

@@ -20,8 +20,8 @@ export type WhatsAppIncomingCallHandler = (call: Call) => void;
  *
  * provider.onCall(async (call) => {
  *   await call.accept();
- *   call.getAgentBridge().onVoiceInput((transcript) => {
- *     void call.getAgentBridge().injectTTS(`You said: ${transcript}`);
+ *   call.agent().onSpeech((transcript) => {
+ *     void call.agent().say(`You said: ${transcript}`);
  *   });
  * });
  * ```
@@ -40,17 +40,17 @@ export class WhatsAppVoiceProvider implements VoiceProvider {
 
   /**
    * @param manager - The shared connection manager wrapping the WASocket.
-   *   `registerVoiceProvider(this)` is called immediately so the manager
+   *   `register(this)` is called immediately so the manager
    *   can route call events to this provider.
    */
   constructor(manager: WhatsAppConnectionManager) {
     this._manager = manager;
 
     // Single-socket contract: register once, never open a new socket.
-    manager.registerVoiceProvider(this);
+    manager.register(this);
 
     // Subscribe to incoming calls.
-    manager.onCallEvent((event) => {
+    manager.onCall((event) => {
       const call = new WhatsAppCall(event, manager);
       this._calls.set(event.callId, call);
       for (const handler of this._onCallHandlers) {
@@ -59,7 +59,7 @@ export class WhatsAppVoiceProvider implements VoiceProvider {
     });
 
     // Subscribe to remote state changes and route to the correct call.
-    manager.onCallStateChange((event) => {
+    manager.onState((event) => {
       const call = this._calls.get(event.callId);
       call?._notifyExternalStateChange(event.state);
     });
@@ -70,7 +70,7 @@ export class WhatsAppVoiceProvider implements VoiceProvider {
   // -------------------------------------------------------------------------
 
   /** @inheritdoc */
-  async createCall(endpoint: Endpoint, _options?: CallOptions): Promise<Call> {
+  async dial(endpoint: Endpoint, _options?: CallOptions): Promise<Call> {
     // WhatsAppCall initialises in `ringing` state — the correct state for an
     // outbound call waiting for the remote party to answer.
     const call = new WhatsAppCall(
@@ -88,8 +88,8 @@ export class WhatsAppVoiceProvider implements VoiceProvider {
   }
 
   /** @inheritdoc */
-  async joinGroupCall(groupId: string, _options?: CallOptions): Promise<Call> {
-    await this._manager.joinGroupCall(groupId);
+  async join(groupId: string, _options?: CallOptions): Promise<Call> {
+    await this._manager.join(groupId);
     const call = new WhatsAppCall(
       {
         callId: `grp-${Date.now().toString()}`,

@@ -18,7 +18,7 @@ function makeProvider(): {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppVoiceProvider constructor", () => {
-  it("calls manager.registerVoiceProvider exactly once", () => {
+  it("calls manager.register exactly once", () => {
     const { provider, manager } = makeProvider();
     expect(manager.registeredProviders).toHaveLength(1);
     expect(manager.registeredProviders[0]).toBe(provider);
@@ -34,7 +34,7 @@ describe("WhatsAppVoiceProvider constructor", () => {
     expect(manager.registeredProviders[1]).toBe(p2);
   });
 
-  it("subscribes to manager.onCallEvent", () => {
+  it("subscribes to manager.onCall", () => {
     // Verified indirectly: triggerCallEvent fires onCall handlers
     const { provider, manager } = makeProvider();
     const received: Call[] = [];
@@ -43,7 +43,7 @@ describe("WhatsAppVoiceProvider constructor", () => {
     expect(received).toHaveLength(1);
   });
 
-  it("subscribes to manager.onCallStateChange", () => {
+  it("subscribes to manager.onState", () => {
     // Verified indirectly: triggerStateChange updates a call's state
     const { provider, manager } = makeProvider();
     let call: WhatsAppCall | undefined;
@@ -127,13 +127,13 @@ describe("WhatsAppVoiceProvider incoming calls", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Outbound: createCall
+// Outbound: dial
 // ---------------------------------------------------------------------------
 
-describe("WhatsAppVoiceProvider createCall", () => {
+describe("WhatsAppVoiceProvider dial", () => {
   it("returns a WhatsAppCall in ringing state", async () => {
     const { provider } = makeProvider();
-    const call = await provider.createCall({
+    const call = await provider.dial({
       type: "whatsapp",
       id: "+15550001234@s.whatsapp.net",
     });
@@ -143,7 +143,7 @@ describe("WhatsAppVoiceProvider createCall", () => {
 
   it("call endpoint matches the provided endpoint", async () => {
     const { provider } = makeProvider();
-    const call = await provider.createCall({
+    const call = await provider.dial({
       type: "whatsapp",
       id: "+15559876543@s.whatsapp.net",
     });
@@ -152,20 +152,20 @@ describe("WhatsAppVoiceProvider createCall", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Outbound: joinGroupCall
+// Outbound: join
 // ---------------------------------------------------------------------------
 
-describe("WhatsAppVoiceProvider joinGroupCall", () => {
-  it("delegates to manager.joinGroupCall", async () => {
+describe("WhatsAppVoiceProvider join", () => {
+  it("delegates to manager.join", async () => {
     const { provider, manager } = makeProvider();
-    await provider.joinGroupCall("group-jid@g.us");
+    await provider.join("group-jid@g.us");
     expect(manager.joinedGroupCalls).toHaveLength(1);
     expect(manager.joinedGroupCalls[0]!.groupJid).toBe("group-jid@g.us");
   });
 
   it("returns a WhatsAppCall in connecting state", async () => {
     const { provider } = makeProvider();
-    const call = await provider.joinGroupCall("group@g.us");
+    const call = await provider.join("group@g.us");
     expect(call).toBeInstanceOf(WhatsAppCall);
     expect(call.state).toBe("connecting");
   });

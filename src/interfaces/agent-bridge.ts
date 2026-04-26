@@ -43,17 +43,17 @@ export interface TTSProvider {
  * - inject raw audio or synthetic video streams directly
  *
  * STT and TTS providers are pluggable at runtime via
- * {@link AgentBridge.setSTTProvider} and {@link AgentBridge.setTTSProvider}.
+ * {@link AgentBridge.setSTT} and {@link AgentBridge.setTTS}.
  *
  * @example
  * ```ts
- * const bridge = call.getAgentBridge();
- * bridge.setSTTProvider(mySTT);
- * bridge.setTTSProvider(myTTS);
+ * const bridge = call.agent();
+ * bridge.setSTT(mySTT);
+ * bridge.setTTS(myTTS);
  *
- * bridge.onVoiceInput((transcript) => {
+ * bridge.onSpeech((transcript) => {
  *   // Send to LLM, then reply:
- *   void bridge.injectTTS("Hello, I heard you say: " + transcript);
+ *   void bridge.say("Hello, I heard you say: " + transcript);
  * });
  * ```
  */
@@ -62,13 +62,11 @@ export interface AgentBridge {
    * Register a callback that fires whenever a voice transcript is ready.
    *
    * Requires an {@link STTProvider} to have been set via
-   * {@link AgentBridge.setSTTProvider}.
+   * {@link AgentBridge.setSTT}.
    *
    * @param callback - Receives the transcript, confidence score, and optional metadata.
    */
-  onVoiceInput(
-    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
-  ): void;
+  onSpeech(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void;
 
   /**
    * Register a callback that fires for each incoming video frame.
@@ -76,7 +74,7 @@ export interface AgentBridge {
    *
    * @param callback - Receives the raw frame buffer and a UTC timestamp.
    */
-  onVideoFrame?(callback: (frame: Buffer, timestamp: number) => void): void;
+  onFrame?(callback: (frame: Buffer, timestamp: number) => void): void;
 
   /**
    * Synthesise `text` via the current TTS provider and inject it into the call.
@@ -84,14 +82,14 @@ export interface AgentBridge {
    * @param text    - Text to speak.
    * @param options - Optional TTS synthesis parameters.
    */
-  injectTTS(text: string, options?: TTSOptions): Promise<void>;
+  say(text: string, options?: TTSOptions): Promise<void>;
 
   /**
    * Inject a pre-encoded audio stream directly into the call.
    *
    * @param stream - Audio stream to inject.
    */
-  injectAudio(stream: MediaSource): Promise<void>;
+  play(stream: MediaSource): Promise<void>;
 
   /**
    * Inject a synthetic video stream (e.g. an avatar) into the call.
@@ -99,21 +97,21 @@ export interface AgentBridge {
    *
    * @param stream - Video stream to inject.
    */
-  injectSyntheticVideo?(stream: MediaSource): Promise<void>;
+  show?(stream: MediaSource): Promise<void>;
 
   /**
    * Replace the active STT provider.
-   * Affects all subsequent calls to {@link AgentBridge.onVoiceInput}.
+   * Affects all subsequent calls to {@link AgentBridge.onSpeech}.
    *
    * @param provider - The new STT provider.
    */
-  setSTTProvider(provider: STTProvider): void;
+  setSTT(provider: STTProvider): void;
 
   /**
    * Replace the active TTS provider.
-   * Affects all subsequent calls to {@link AgentBridge.injectTTS}.
+   * Affects all subsequent calls to {@link AgentBridge.say}.
    *
    * @param provider - The new TTS provider.
    */
-  setTTSProvider(provider: TTSProvider): void;
+  setTTS(provider: TTSProvider): void;
 }

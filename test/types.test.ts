@@ -155,9 +155,9 @@ void _callOpts;
 const _provider = {
   name: "mock",
   supportedMedia: ["audio", "video"] as const satisfies readonly MediaType[],
-  createCall: async (_endpoint: Endpoint, _opts?: CallOptions): Promise<Call> =>
+  dial: async (_endpoint: Endpoint, _opts?: CallOptions): Promise<Call> =>
     Promise.reject(new Error("not implemented")),
-  joinGroupCall: async (_groupId: string, _opts?: CallOptions): Promise<Call> =>
+  join: async (_groupId: string, _opts?: CallOptions): Promise<Call> =>
     Promise.reject(new Error("not implemented")),
 } satisfies VoiceProvider;
 void _provider;
@@ -178,10 +178,10 @@ void _tts;
 
 // AgentBridge structural check
 const _bridge = {
-  onVoiceInput: (_cb: (t: string, c: number, m?: unknown) => void): void => {},
-  injectTTS: async (_text: string, _opts?: TTSOptions): Promise<void> => {},
-  injectAudio: async (_stream: MediaSource): Promise<void> => {},
-  setSTTProvider: (_p: STTProvider): void => {},
-  setTTSProvider: (_p: TTSProvider): void => {},
+  onSpeech: (_cb: (t: string, c: number, m?: unknown) => void): void => {},
+  say: async (_text: string, _opts?: TTSOptions): Promise<void> => {},
+  play: async (_stream: MediaSource): Promise<void> => {},
+  setSTT: (_p: STTProvider): void => {},
+  setTTS: (_p: TTSProvider): void => {},
 } satisfies AgentBridge;
 void _bridge;

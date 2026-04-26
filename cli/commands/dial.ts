@@ -45,8 +45,8 @@ export async function dialAction(
 
   log(`[mock] Dialling ${options.to}...`);
 
-  const call = await provider.createCall({ type, id });
-  // Log initial state immediately — createCall sets 'ringing' before we attach a listener.
+  const call = await provider.dial({ type, id });
+  // Log initial state immediately — dial sets 'ringing' before we attach a listener.
   log(`  → state: ${call.state}`);
 
   return new Promise<void>((resolve) => {

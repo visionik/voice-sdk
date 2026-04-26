@@ -20,7 +20,7 @@ import { MediaStreamQueue } from "./media-stream-queue.js";
  *
  * All lifecycle operations (`accept`, `reject`, `hangup`) delegate to the
  * manager, which in turn drives the underlying WASocket. Inbound audio is
- * exposed as a push-fed {@link MediaSource} via `getMediaStream()`.
+ * exposed as a push-fed {@link MediaSource} via `stream()`.
  *
  * State transitions triggered externally (remote hangup, network failure)
  * are delivered via {@link WhatsAppCall._notifyExternalStateChange}.
@@ -45,7 +45,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
     this._bridge = new BaseAgentBridge(this);
 
     // Wire inbound audio from the manager into the media queue.
-    manager.onAudioData?.((callId, chunk) => {
+    manager.onAudio?.((callId, chunk) => {
       if (callId === this.id) {
         this._mediaQueues.get("audio")?.push(chunk);
       }
@@ -58,14 +58,6 @@ export class WhatsAppCall extends EventEmitter implements Call {
 
   get state(): CallState {
     return this._state;
-  }
-
-  get mode(): CallMode {
-    return this._mode;
-  }
-
-  get activeMedia(): ReadonlySet<MediaType> {
-    return this._activeMedia;
   }
 
   // -------------------------------------------------------------------------
@@ -82,10 +74,10 @@ export class WhatsAppCall extends EventEmitter implements Call {
 
     try {
       this._transitionState("connecting");
-      await this._manager.answerCall(this.id, { video: wantsVideo });
+      await this._manager.answer(this.id, { video: wantsVideo });
     } catch (err) {
       this._transitionState("failed");
-      throw CallError.mediaFailure(err instanceof Error ? err.message : "answerCall failed");
+      throw CallError.mediaFailure(err instanceof Error ? err.message : "answer failed");
     }
 
     for (const m of media) {
@@ -98,25 +90,36 @@ export class WhatsAppCall extends EventEmitter implements Call {
   }
 
   async reject(reason?: string): Promise<void> {
-    await this._manager.rejectCall(this.id, reason);
+    await this._manager.reject(this.id, reason);
     this._transitionState("ended");
   }
 
   async hangup(_reason?: string): Promise<void> {
-    await this._manager.endCall(this.id);
+    await this._manager.end(this.id);
     this._transitionState("ended");
   }
 
-  async upgradeMode(newMode: CallMode): Promise<void> {
+  mode(): CallMode;
+  mode(newMode: CallMode): Promise<void>;
+  mode(newMode?: CallMode): CallMode | Promise<void> {
+    if (newMode === undefined) return this._mode;
     if (this._state !== "connected") {
-      throw CallError.unauthorized(`Cannot upgrade mode: call is in state "${this._state}"`);
+      return Promise.reject(
+        CallError.unauthorized(`Cannot set mode: call is in state "${this._state}"`),
+      );
     }
     this._mode = newMode;
+    return Promise.resolve();
   }
 
-  async upgradeMedia(newMedia: MediaType[]): Promise<void> {
+  media(): ReadonlySet<MediaType>;
+  media(newMedia: MediaType[]): Promise<void>;
+  media(newMedia?: MediaType[]): ReadonlySet<MediaType> | Promise<void> {
+    if (newMedia === undefined) return this._activeMedia;
     if (this._state !== "connected") {
-      throw CallError.mediaFailure(`Cannot upgrade media: call is in state "${this._state}"`);
+      return Promise.reject(
+        CallError.mediaFailure(`Cannot set media: call is in state "${this._state}"`),
+      );
     }
     for (const m of newMedia) {
       if (!this._activeMedia.has(m)) {
@@ -125,23 +128,24 @@ export class WhatsAppCall extends EventEmitter implements Call {
         this.emit("media", m, true);
       }
     }
+    return Promise.resolve();
   }
 
   // -------------------------------------------------------------------------
   // Media
   // -------------------------------------------------------------------------
 
-  getMediaStream(type: MediaType): MediaSource | null {
+  stream(type: MediaType): MediaSource | null {
     return this._mediaQueues.get(type) ?? null;
   }
 
-  async sendMedia(data: MediaSource, type: MediaType): Promise<void> {
-    if (type === "audio" && this._manager.sendAudio) {
+  async send(data: MediaSource, type: MediaType): Promise<void> {
+    if (type === "audio" && this._manager.send) {
       for await (const chunk of data) {
-        await this._manager.sendAudio(this.id, chunk);
+        await this._manager.send(this.id, chunk);
       }
     }
-    // Non-audio media types or managers without sendAudio: no-op for now.
+    // Non-audio media types or managers without send: no-op for now.
   }
 
   // -------------------------------------------------------------------------
@@ -161,7 +165,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
   // Agent bridge
   // -------------------------------------------------------------------------
 
-  getAgentBridge(): AgentBridge {
+  agent(): AgentBridge {
     return this._bridge;
   }
 
@@ -180,7 +184,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
 
   /**
    * Apply a state change received from the manager (remote hangup, failure).
-   * Called by {@link WhatsAppVoiceProvider} when `onCallStateChange` fires.
+   * Called by {@link WhatsAppVoiceProvider} when `onState` fires.
    *
    * @internal
    */

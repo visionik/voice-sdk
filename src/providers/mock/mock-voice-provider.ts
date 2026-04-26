@@ -12,9 +12,9 @@ export type IncomingCallHandler = (call: Call) => void;
  * `MockVoiceProvider` allows test code to simulate the full call lifecycle
  * without any real network or telephony connection:
  *
- * - {@link MockVoiceProvider.triggerIncoming} — simulate an inbound call
- * - {@link MockVoiceProvider.simulateStateChange} — force a call into any state
- * - {@link MockVoiceProvider.simulateVoiceInput} — deliver a transcript to
+ * - {@link MockVoiceProvider.ring} — simulate an inbound call
+ * - {@link MockVoiceProvider.setState} — force a call into any state
+ * - {@link MockVoiceProvider.speak} — deliver a transcript to
  *   the call's {@link AgentBridge}
  *
  * @example
@@ -22,11 +22,11 @@ export type IncomingCallHandler = (call: Call) => void;
  * const provider = new MockVoiceProvider();
  * provider.onCall(async (call) => {
  *   await call.accept();
- *   call.getAgentBridge().onVoiceInput((t) => console.log('heard:', t));
+ *   call.agent().onSpeech((t) => console.log('heard:', t));
  * });
  *
- * const call = provider.triggerIncoming({ type: 'whatsapp', id: '+1234' });
- * provider.simulateVoiceInput(call.id, 'hello world');
+ * const call = provider.ring({ type: 'whatsapp', id: '+1234' });
+ * provider.speak(call.id, 'hello world');
  * ```
  */
 export class MockVoiceProvider implements VoiceProvider {
@@ -45,14 +45,14 @@ export class MockVoiceProvider implements VoiceProvider {
   // -------------------------------------------------------------------------
 
   /** @inheritdoc */
-  async createCall(endpoint: Endpoint, options?: CallOptions): Promise<Call> {
+  async dial(endpoint: Endpoint, options?: CallOptions): Promise<Call> {
     const call = this._makeCall(endpoint, options);
     call._transitionState("ringing");
     return call;
   }
 
   /** @inheritdoc */
-  async joinGroupCall(groupId: string, options?: CallOptions): Promise<Call> {
+  async join(groupId: string, options?: CallOptions): Promise<Call> {
     const endpoint: Endpoint = { type: "whatsapp", id: groupId };
     const call = this._makeCall(endpoint, options);
     call._transitionState("connecting");
@@ -65,7 +65,7 @@ export class MockVoiceProvider implements VoiceProvider {
 
   /**
    * Register a handler to receive incoming calls simulated via
-   * {@link MockVoiceProvider.triggerIncoming}.
+   * {@link MockVoiceProvider.ring}.
    *
    * Multiple handlers can be registered; all are called in registration order.
    *
@@ -84,9 +84,9 @@ export class MockVoiceProvider implements VoiceProvider {
    * @param endpoint - The remote endpoint the call originates from.
    * @param options  - Optional call configuration.
    * @returns The created {@link MockCall} — typed as `MockCall` so callers
-   *   can access test helpers (`_triggerVoiceInput`, `getSentMedia`, etc.).
+   *   can access test helpers (`_triggerVoiceInput`, `sent`, etc.).
    */
-  triggerIncoming(endpoint: Endpoint, options?: CallOptions): MockCall {
+  ring(endpoint: Endpoint, options?: CallOptions): MockCall {
     const call = this._makeCall(endpoint, options);
     call._transitionState("ringing");
     for (const handler of this._onCallHandlers) {
@@ -102,7 +102,7 @@ export class MockVoiceProvider implements VoiceProvider {
    * @param newState - The target {@link CallState}.
    * @throws `Error` if no call with the given ID is registered.
    */
-  simulateStateChange(callId: string, newState: CallState): void {
+  setState(callId: string, newState: CallState): void {
     const call = this._requireCall(callId);
     call._transitionState(newState);
   }
@@ -111,14 +111,14 @@ export class MockVoiceProvider implements VoiceProvider {
    * Deliver a voice transcript to the agent bridge of the call with `callId`.
    *
    * This simulates what would happen after STT processes the call's audio —
-   * all callbacks registered via `onVoiceInput` will fire.
+   * all callbacks registered via `onSpeech` will fire.
    *
    * @param callId     - The {@link Call.id} to deliver transcript to.
    * @param transcript - The recognised speech text.
    * @param confidence - Recognition confidence score (0–1). Defaults to `1.0`.
    * @throws `Error` if no call with the given ID is registered.
    */
-  simulateVoiceInput(callId: string, transcript: string, confidence = 1.0): void {
+  speak(callId: string, transcript: string, confidence = 1.0): void {
     const call = this._requireCall(callId);
     call._triggerVoiceInput(transcript, confidence);
   }

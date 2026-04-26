@@ -56,33 +56,33 @@ describe("MockCall state machine", () => {
     expect(call.state).toBe("ended");
   });
 
-  it("upgradeMode() updates the mode", async () => {
+  it("mode() updates the mode", async () => {
     const call = makeCall();
     await call.accept();
-    await call.upgradeMode("listen-only");
-    expect(call.mode).toBe("listen-only");
+    await call.mode("listen-only");
+    expect(call.mode()).toBe("listen-only");
   });
 
-  it("upgradeMode() throws when not connected", async () => {
+  it("mode() throws when not connected", async () => {
     const call = makeCall();
-    await expect(call.upgradeMode("talkback")).rejects.toBeInstanceOf(CallError);
+    await expect(call.mode("talkback")).rejects.toBeInstanceOf(CallError);
   });
 
-  it("upgradeMedia() adds new media types", async () => {
+  it("media() adds new media types", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    await call.upgradeMedia(["audio", "video"]);
-    expect(call.activeMedia.has("video")).toBe(true);
+    await call.media(["audio", "video"]);
+    expect(call.media().has("video")).toBe(true);
   });
 
-  it("upgradeMedia() emits media events for newly added types", async () => {
+  it("media() emits media events for newly added types", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
 
     const mediaEvents: Array<{ type: string; active: boolean }> = [];
     call.on("media", (t, a) => mediaEvents.push({ type: t, active: a }));
 
-    await call.upgradeMedia(["audio", "video"]);
+    await call.media(["audio", "video"]);
     expect(mediaEvents).toContainEqual({ type: "video", active: true });
     // audio was already active — no duplicate event
     expect(mediaEvents.filter((e) => e.type === "audio")).toHaveLength(0);
@@ -102,21 +102,21 @@ describe("MockCall state machine", () => {
 // ---------------------------------------------------------------------------
 
 describe("MockCall media", () => {
-  it("getMediaStream returns null for inactive type", () => {
-    expect(makeCall().getMediaStream("audio")).toBeNull();
+  it("stream returns null for inactive type", () => {
+    expect(makeCall().stream("audio")).toBeNull();
   });
 
-  it("getMediaStream returns a stream after accept()", async () => {
+  it("stream returns a stream after accept()", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    const stream = call.getMediaStream("audio");
+    const stream = call.stream("audio");
     expect(stream).not.toBeNull();
   });
 
-  it("getMediaStream stream yields Buffer chunks", async () => {
+  it("stream stream yields Buffer chunks", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    const stream = call.getMediaStream("audio");
+    const stream = call.stream("audio");
     const chunks: Buffer[] = [];
     for await (const chunk of stream!) {
       chunks.push(chunk);
@@ -125,7 +125,7 @@ describe("MockCall media", () => {
     expect(chunks[0]).toBeInstanceOf(Buffer);
   });
 
-  it("sendMedia records sent chunks", async () => {
+  it("send records sent chunks", async () => {
     const call = makeCall();
     await call.accept();
 
@@ -134,9 +134,9 @@ describe("MockCall media", () => {
       yield Buffer.from("chunk-b");
     }
 
-    await call.sendMedia(gen(), "audio");
+    await call.send(gen(), "audio");
 
-    const sent = call.getSentMedia();
+    const sent = call.sent();
     expect(sent).toHaveLength(1);
     expect(sent[0]!.type).toBe("audio");
     expect(sent[0]!.chunks).toHaveLength(2);
@@ -186,15 +186,15 @@ describe("MockCall text channel", () => {
 // ---------------------------------------------------------------------------
 
 describe("MockCall agent bridge", () => {
-  it("getAgentBridge returns the same instance each call", () => {
+  it("agent returns the same instance each call", () => {
     const call = makeCall();
-    expect(call.getAgentBridge()).toBe(call.getAgentBridge());
+    expect(call.agent()).toBe(call.agent());
   });
 
-  it("_triggerVoiceInput fires onVoiceInput callbacks via bridge", () => {
+  it("_triggerVoiceInput fires onSpeech callbacks via bridge", () => {
     const call = makeCall();
     const transcripts: string[] = [];
-    call.getAgentBridge().onVoiceInput((t) => transcripts.push(t));
+    call.agent().onSpeech((t) => transcripts.push(t));
 
     call._triggerVoiceInput("hello there", 0.95);
 
@@ -217,7 +217,7 @@ describe("MockCall agent bridge", () => {
 
 describe("MockCall constructor options", () => {
   it("defaults mode to full-duplex", () => {
-    expect(makeCall().mode).toBe("full-duplex");
+    expect(makeCall().mode()).toBe("full-duplex");
   });
 
   it("respects provided mode option", () => {
@@ -225,7 +225,7 @@ describe("MockCall constructor options", () => {
       mediaTypes: ["audio"],
       mode: "listen-only",
     });
-    expect(call.mode).toBe("listen-only");
+    expect(call.mode()).toBe("listen-only");
   });
 });
 

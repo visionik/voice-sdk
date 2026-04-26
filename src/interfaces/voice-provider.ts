@@ -13,7 +13,7 @@ import type { CallOptions, Endpoint, MediaType } from "../types.js";
  * Providers that share an underlying connection (e.g. WhatsApp requires a
  * single WASocket) should accept a connection manager via their constructor
  * rather than opening a new connection themselves. The optional
- * {@link VoiceProvider.setConnectionManager} method is available for late
+ * {@link VoiceProvider.connect} method is available for late
  * injection if constructor injection is not feasible.
  *
  * @example
@@ -23,7 +23,7 @@ import type { CallOptions, Endpoint, MediaType } from "../types.js";
  *   readonly supportedMedia = ['audio', 'video', 'screen'] as const;
  *
  *   constructor(private manager: WhatsAppConnectionManager) {
- *     manager.registerVoiceProvider(this);
+ *     manager.register(this);
  *   }
  *   // ...
  * }
@@ -50,7 +50,7 @@ export interface VoiceProvider {
    * @returns A {@link Call} in `initialized` or `ringing` state.
    * @throws {@link CallError} with code `"unauthorized"` if not permitted.
    */
-  createCall(endpoint: Endpoint, options?: CallOptions): Promise<Call>;
+  dial(endpoint: Endpoint, options?: CallOptions): Promise<Call>;
 
   /**
    * Join an existing group call.
@@ -60,7 +60,7 @@ export interface VoiceProvider {
    * @returns A {@link Call} in `connecting` or `connected` state.
    * @throws {@link CallError} with code `"group-full"` if the group has no capacity.
    */
-  joinGroupCall(groupId: string, options?: CallOptions): Promise<Call>;
+  join(groupId: string, options?: CallOptions): Promise<Call>;
 
   /**
    * Late-inject a shared connection manager.
@@ -70,5 +70,5 @@ export interface VoiceProvider {
    *
    * @param manager - The provider-specific connection manager instance.
    */
-  setConnectionManager?(manager: unknown): void;
+  connect?(manager: unknown): void;
 }

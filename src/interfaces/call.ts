@@ -30,9 +30,9 @@ import type {
  *
  * await call.accept({ mediaTypes: ['audio'] });
  *
- * const agent = call.getAgentBridge();
- * agent.onVoiceInput((transcript) => {
- *   void agent.injectTTS('You said: ' + transcript);
+ * const agent = call.agent();
+ * agent.onSpeech((transcript) => {
+ *   void agent.say('You said: ' + transcript);
  * });
  * ```
  */
@@ -48,12 +48,6 @@ export interface Call extends EventEmitter {
 
   /** Current lifecycle state. */
   readonly state: CallState;
-
-  /** Current participation mode. */
-  readonly mode: CallMode;
-
-  /** The set of currently active media types. */
-  readonly activeMedia: ReadonlySet<MediaType>;
 
   // -------------------------------------------------------------------------
   // Control
@@ -83,20 +77,22 @@ export interface Call extends EventEmitter {
   hangup(reason?: string): Promise<void>;
 
   /**
-   * Upgrade or downgrade the participation mode.
+   * Get the current participation mode (no args) or set it (with arg).
    *
-   * @param newMode - The target {@link CallMode}.
-   * @throws {@link CallError} with code `"unauthorized"` if the mode change is denied.
+   * - `call.mode()` — returns current {@link CallMode}
+   * - `call.mode(m)` — changes mode; throws {@link CallError} `"unauthorized"` if denied
    */
-  upgradeMode(newMode: CallMode): Promise<void>;
+  mode(): CallMode;
+  mode(newMode: CallMode): Promise<void>;
 
   /**
-   * Add or change the active media types.
+   * Get the active media set (no args) or activate new types (with arg).
    *
-   * @param newMedia - The complete desired set of media types.
-   * @throws {@link CallError} with code `"media-failure"` if negotiation fails.
+   * - `call.media()` — returns current `ReadonlySet<MediaType>`
+   * - `call.media(types)` — activates channels; throws {@link CallError} `"media-failure"` if denied
    */
-  upgradeMedia(newMedia: MediaType[]): Promise<void>;
+  media(): ReadonlySet<MediaType>;
+  media(newMedia: MediaType[]): Promise<void>;
 
   // -------------------------------------------------------------------------
   // Media
@@ -108,7 +104,7 @@ export interface Call extends EventEmitter {
    * @param type - The media type to retrieve.
    * @returns A {@link MediaSource} stream, or `null` if that type is not active.
    */
-  getMediaStream(type: MediaType): MediaSource | null;
+  stream(type: MediaType): MediaSource | null;
 
   /**
    * Send an outbound media stream into the call.
@@ -117,7 +113,7 @@ export interface Call extends EventEmitter {
    * @param type - The media type being sent.
    * @throws {@link CallError} with code `"media-failure"` on send error.
    */
-  sendMedia(data: MediaSource, type: MediaType): Promise<void>;
+  send(data: MediaSource, type: MediaType): Promise<void>;
 
   // -------------------------------------------------------------------------
   // Text channel
@@ -146,7 +142,7 @@ export interface Call extends EventEmitter {
    * Get the {@link AgentBridge} attached to this call.
    * Each call has exactly one bridge instance for its lifetime.
    */
-  getAgentBridge(): AgentBridge;
+  agent(): AgentBridge;
 
   // -------------------------------------------------------------------------
   // Events (typed EventEmitter overloads)

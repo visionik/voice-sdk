@@ -3,7 +3,7 @@
  * audio/video events into the SDK's `AsyncIterable<Buffer>` media model.
  *
  * The queue is created when a call is accepted and a media type becomes active.
- * The manager's `onAudioData` callback pushes chunks; when the call ends,
+ * The manager's `onAudio` callback pushes chunks; when the call ends,
  * `end()` is called to close the iterator.
  *
  * @internal

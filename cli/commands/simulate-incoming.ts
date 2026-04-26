@@ -72,6 +72,6 @@ export async function simulateIncomingAction(
     });
 
     // Trigger the simulated inbound call.
-    provider.triggerIncoming({ type, id });
+    provider.ring({ type, id });
   });
 }

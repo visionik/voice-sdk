@@ -23,8 +23,8 @@ export class MockWhatsAppConnectionManager implements WhatsAppConnectionManager 
   }> = [];
   readonly sentAudio: Array<{ callId: string; chunk: Buffer }> = [];
 
-  // Controls whether answerCall rejects (to test error propagation).
-  answerCallError: Error | undefined = undefined;
+  // Controls whether answer rejects (to test error propagation).
+  answerError: Error | undefined = undefined;
 
   private readonly _callEventCbs: Array<(event: WhatsAppCallEvent) => void> = [];
   private readonly _stateChangeCbs: Array<(event: WhatsAppCallStateEvent) => void> = [];
@@ -34,40 +34,40 @@ export class MockWhatsAppConnectionManager implements WhatsAppConnectionManager 
   // WhatsAppConnectionManager interface
   // -------------------------------------------------------------------------
 
-  registerVoiceProvider(provider: VoiceProvider): void {
+  register(provider: VoiceProvider): void {
     this.registeredProviders.push(provider);
   }
 
-  onCallEvent(cb: (event: WhatsAppCallEvent) => void): void {
+  onCall(cb: (event: WhatsAppCallEvent) => void): void {
     this._callEventCbs.push(cb);
   }
 
-  onCallStateChange(cb: (event: WhatsAppCallStateEvent) => void): void {
+  onState(cb: (event: WhatsAppCallStateEvent) => void): void {
     this._stateChangeCbs.push(cb);
   }
 
-  onAudioData(cb: (callId: string, chunk: Buffer) => void): void {
+  onAudio(cb: (callId: string, chunk: Buffer) => void): void {
     this._audioCbs.push(cb);
   }
 
-  async answerCall(callId: string, opts?: { video?: boolean }): Promise<void> {
-    if (this.answerCallError) throw this.answerCallError;
+  async answer(callId: string, opts?: { video?: boolean }): Promise<void> {
+    if (this.answerError) throw this.answerError;
     this.answeredCalls.push({ callId, opts });
   }
 
-  async rejectCall(callId: string, reason?: string): Promise<void> {
+  async reject(callId: string, reason?: string): Promise<void> {
     this.rejectedCalls.push({ callId, reason });
   }
 
-  async endCall(callId: string): Promise<void> {
+  async end(callId: string): Promise<void> {
     this.endedCalls.push(callId);
   }
 
-  async joinGroupCall(groupJid: string, opts?: { video?: boolean }): Promise<void> {
+  async join(groupJid: string, opts?: { video?: boolean }): Promise<void> {
     this.joinedGroupCalls.push({ groupJid, opts });
   }
 
-  async sendAudio(callId: string, chunk: Buffer): Promise<void> {
+  async send(callId: string, chunk: Buffer): Promise<void> {
     this.sentAudio.push({ callId, chunk });
   }
 

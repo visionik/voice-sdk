@@ -48,7 +48,7 @@ export type WhatsAppCallStateEvent = {
  *
  * A single `WhatsAppConnectionManager` wraps one WASocket. Multiple
  * {@link WhatsAppVoiceProvider} instances can be registered on the same
- * manager (each calls {@link WhatsAppConnectionManager.registerVoiceProvider}
+ * manager (each calls {@link WhatsAppConnectionManager.register}
  * once), but the underlying socket is never duplicated.
  *
  * @example
@@ -58,7 +58,7 @@ export type WhatsAppCallStateEvent = {
  *   constructor(private readonly socket: WASocket) {
  *     socket.ev.on('call', (events) => this._handleCallEvents(events));
  *   }
- *   registerVoiceProvider(provider: VoiceProvider): void { ... }
+ *   register(provider: VoiceProvider): void { ... }
  *   // ...
  * }
  * ```
@@ -73,28 +73,28 @@ export interface WhatsAppConnectionManager {
    *
    * @param provider - The provider to register.
    */
-  registerVoiceProvider(provider: VoiceProvider): void;
+  register(provider: VoiceProvider): void;
 
   /**
    * Subscribe to inbound call events from the WASocket.
    *
    * @param cb - Called for each incoming call.
    */
-  onCallEvent(cb: (event: WhatsAppCallEvent) => void): void;
+  onCall(cb: (event: WhatsAppCallEvent) => void): void;
 
   /**
    * Subscribe to call state changes (remote answer, hangup, failure).
    *
    * @param cb - Called when a call's state changes.
    */
-  onCallStateChange(cb: (event: WhatsAppCallStateEvent) => void): void;
+  onState(cb: (event: WhatsAppCallStateEvent) => void): void;
 
   /**
    * Subscribe to inbound audio chunks from the WASocket.
    *
    * @param cb - Called with the callId and each raw audio Buffer.
    */
-  onAudioData?(cb: (callId: string, chunk: Buffer) => void): void;
+  onAudio?(cb: (callId: string, chunk: Buffer) => void): void;
 
   /**
    * Answer an incoming call.
@@ -102,7 +102,7 @@ export interface WhatsAppConnectionManager {
    * @param callId - The call to answer.
    * @param opts.video - If `true`, activate the video channel.
    */
-  answerCall(callId: string, opts?: { video?: boolean }): Promise<void>;
+  answer(callId: string, opts?: { video?: boolean }): Promise<void>;
 
   /**
    * Reject an incoming call before answering.
@@ -110,14 +110,14 @@ export interface WhatsAppConnectionManager {
    * @param callId - The call to reject.
    * @param reason - Optional machine-readable rejection reason.
    */
-  rejectCall(callId: string, reason?: string): Promise<void>;
+  reject(callId: string, reason?: string): Promise<void>;
 
   /**
    * End an active call.
    *
    * @param callId - The call to terminate.
    */
-  endCall(callId: string): Promise<void>;
+  end(callId: string): Promise<void>;
 
   /**
    * Join an existing WhatsApp group call.
@@ -125,7 +125,7 @@ export interface WhatsAppConnectionManager {
    * @param groupJid - The group's JID.
    * @param opts     - Optional call options (e.g. video).
    */
-  joinGroupCall(groupJid: string, opts?: { video?: boolean }): Promise<void>;
+  join(groupJid: string, opts?: { video?: boolean }): Promise<void>;
 
   /**
    * Send an outbound audio chunk into an active call.
@@ -133,5 +133,5 @@ export interface WhatsAppConnectionManager {
    * @param callId - The target call.
    * @param chunk  - Raw audio buffer to transmit.
    */
-  sendAudio?(callId: string, chunk: Buffer): Promise<void>;
+  send?(callId: string, chunk: Buffer): Promise<void>;
 }

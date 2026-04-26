@@ -34,7 +34,7 @@ export type SentMediaEntry = {
  * @example
  * ```ts
  * const provider = new MockVoiceProvider();
- * const call = provider.triggerIncoming({ type: 'whatsapp', id: '+1234' });
+ * const call = provider.ring({ type: 'whatsapp', id: '+1234' });
  * await call.accept();
  * call._triggerVoiceInput('hello', 0.95);
  * ```
@@ -66,14 +66,6 @@ export class MockCall extends EventEmitter implements Call {
     return this._state;
   }
 
-  get mode(): CallMode {
-    return this._mode;
-  }
-
-  get activeMedia(): ReadonlySet<MediaType> {
-    return this._activeMedia;
-  }
-
   // -------------------------------------------------------------------------
   // Call interface — control
   // -------------------------------------------------------------------------
@@ -101,16 +93,27 @@ export class MockCall extends EventEmitter implements Call {
     this._transitionState("ended");
   }
 
-  async upgradeMode(newMode: CallMode): Promise<void> {
+  mode(): CallMode;
+  mode(newMode: CallMode): Promise<void>;
+  mode(newMode?: CallMode): CallMode | Promise<void> {
+    if (newMode === undefined) return this._mode;
     if (this._state !== "connected") {
-      throw CallError.unauthorized(`Cannot upgrade mode: call is in state "${this._state}"`);
+      return Promise.reject(
+        CallError.unauthorized(`Cannot set mode: call is in state "${this._state}"`),
+      );
     }
     this._mode = newMode;
+    return Promise.resolve();
   }
 
-  async upgradeMedia(newMedia: MediaType[]): Promise<void> {
+  media(): ReadonlySet<MediaType>;
+  media(newMedia: MediaType[]): Promise<void>;
+  media(newMedia?: MediaType[]): ReadonlySet<MediaType> | Promise<void> {
+    if (newMedia === undefined) return this._activeMedia;
     if (this._state !== "connected") {
-      throw CallError.mediaFailure(`Cannot upgrade media: call is in state "${this._state}"`);
+      return Promise.reject(
+        CallError.mediaFailure(`Cannot set media: call is in state "${this._state}"`),
+      );
     }
     for (const m of newMedia) {
       if (!this._activeMedia.has(m)) {
@@ -118,13 +121,14 @@ export class MockCall extends EventEmitter implements Call {
         this.emit("media", m, true);
       }
     }
+    return Promise.resolve();
   }
 
   // -------------------------------------------------------------------------
   // Call interface — media
   // -------------------------------------------------------------------------
 
-  getMediaStream(type: MediaType): MediaSource | null {
+  stream(type: MediaType): MediaSource | null {
     if (!this._activeMedia.has(type)) return null;
     return MockCall._makeTestStream(type);
   }
@@ -134,7 +138,7 @@ export class MockCall extends EventEmitter implements Call {
     yield Buffer.from(`${type}-chunk-2`);
   }
 
-  async sendMedia(data: MediaSource, type: MediaType): Promise<void> {
+  async send(data: MediaSource, type: MediaType): Promise<void> {
     const chunks: Buffer[] = [];
     for await (const chunk of data) {
       chunks.push(chunk);
@@ -159,7 +163,7 @@ export class MockCall extends EventEmitter implements Call {
   // Call interface — agent bridge
   // -------------------------------------------------------------------------
 
-  getAgentBridge(): AgentBridge {
+  agent(): AgentBridge {
     return this._bridge;
   }
 
@@ -188,7 +192,7 @@ export class MockCall extends EventEmitter implements Call {
   }
 
   /**
-   * Trigger `onVoiceInput` callbacks on the bridge — as if the STT provider
+   * Trigger `onSpeech` callbacks on the bridge — as if the STT provider
    * produced a transcript for the call's audio stream.
    *
    * @internal
@@ -198,13 +202,13 @@ export class MockCall extends EventEmitter implements Call {
   }
 
   /**
-   * Return all media chunks sent via {@link MockCall.sendMedia}.
-   * Useful for asserting that {@link AgentBridge.injectTTS} delivered the
+   * Return all media chunks sent via {@link MockCall.send}.
+   * Useful for asserting that {@link AgentBridge.say} delivered the
    * expected audio.
    *
    * @internal
    */
-  getSentMedia(): ReadonlyArray<SentMediaEntry> {
+  sent(): ReadonlyArray<SentMediaEntry> {
     return this._sentMedia;
   }
 }

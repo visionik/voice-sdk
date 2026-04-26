@@ -150,11 +150,11 @@ void _tts;
 
 // AgentBridge structural check
 const _bridge: AgentBridge = {
-  onVoiceInput: (_cb: (t: string, c: number) => void): void => {},
-  injectTTS: async (_text: string): Promise<void> => {},
-  injectAudio: async (_s: MediaSource): Promise<void> => {},
-  setSTTProvider: (_p: STTProvider): void => {},
-  setTTSProvider: (_p: TTSProvider): void => {},
+  onSpeech: (_cb: (t: string, c: number) => void): void => {},
+  say: async (_text: string): Promise<void> => {},
+  play: async (_s: MediaSource): Promise<void> => {},
+  setSTT: (_p: STTProvider): void => {},
+  setTTS: (_p: TTSProvider): void => {},
 };
 void _bridge;
 

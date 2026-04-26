@@ -8,15 +8,15 @@ import type { MediaSource, TTSOptions } from "../types.js";
  * media streams.
  *
  * Each {@link Call} implementation creates exactly one `BaseAgentBridge`
- * instance and returns it from `getAgentBridge()`. The bridge holds a
- * reference back to the call so it can inject media via `sendMedia`.
+ * instance and returns it from `agent()`. The bridge holds a
+ * reference back to the call so it can inject media via `send`.
  *
  * @example
  * ```ts
  * // Inside a Call implementation:
  * private readonly _bridge = new BaseAgentBridge(this);
  *
- * getAgentBridge(): AgentBridge {
+ * agent(): AgentBridge {
  *   return this._bridge;
  * }
  * ```
@@ -31,47 +31,45 @@ export class BaseAgentBridge implements AgentBridge {
 
   /**
    * @param call - The call this bridge is attached to.
-   *   Used by {@link BaseAgentBridge.injectAudio} and
-   *   {@link BaseAgentBridge.injectTTS} to deliver synthesised media.
+   *   Used by {@link BaseAgentBridge.play} and
+   *   {@link BaseAgentBridge.say} to deliver synthesised media.
    */
   constructor(private readonly call: Call) {}
 
   /** @inheritdoc */
-  onVoiceInput(
-    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
-  ): void {
+  onSpeech(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void {
     this._voiceInputCallbacks.push(callback);
   }
 
   /** @inheritdoc */
-  onVideoFrame(callback: (frame: Buffer, timestamp: number) => void): void {
+  onFrame(callback: (frame: Buffer, timestamp: number) => void): void {
     this._videoFrameCallbacks.push(callback);
   }
 
   /** @inheritdoc */
-  async injectTTS(text: string, options?: TTSOptions): Promise<void> {
+  async say(text: string, options?: TTSOptions): Promise<void> {
     if (!this._ttsProvider) return;
     const stream = this._ttsProvider.synthesize(text, options);
-    await this.call.sendMedia(stream, "audio");
+    await this.call.send(stream, "audio");
   }
 
   /** @inheritdoc */
-  async injectAudio(stream: MediaSource): Promise<void> {
-    await this.call.sendMedia(stream, "audio");
+  async play(stream: MediaSource): Promise<void> {
+    await this.call.send(stream, "audio");
   }
 
   /** @inheritdoc */
-  async injectSyntheticVideo(stream: MediaSource): Promise<void> {
-    await this.call.sendMedia(stream, "video");
+  async show(stream: MediaSource): Promise<void> {
+    await this.call.send(stream, "video");
   }
 
   /** @inheritdoc */
-  setSTTProvider(provider: STTProvider): void {
+  setSTT(provider: STTProvider): void {
     this._sttProvider = provider;
   }
 
   /** @inheritdoc */
-  setTTSProvider(provider: TTSProvider): void {
+  setTTS(provider: TTSProvider): void {
     this._ttsProvider = provider;
   }
 
@@ -80,9 +78,9 @@ export class BaseAgentBridge implements AgentBridge {
   // ---------------------------------------------------------------------------
 
   /**
-   * Dispatch a voice transcript to all registered `onVoiceInput` callbacks.
+   * Dispatch a voice transcript to all registered `onSpeech` callbacks.
    *
-   * Called by {@link MockVoiceProvider.simulateVoiceInput} and by real
+   * Called by {@link MockVoiceProvider.speak} and by real
    * provider implementations when STT output is available.
    *
    * @internal
@@ -94,7 +92,7 @@ export class BaseAgentBridge implements AgentBridge {
   }
 
   /**
-   * Dispatch a video frame to all registered `onVideoFrame` callbacks.
+   * Dispatch a video frame to all registered `onFrame` callbacks.
    *
    * @internal
    */
