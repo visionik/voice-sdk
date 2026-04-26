@@ -1,0 +1,50 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "author": "agent:deft-directive-setup",
+    "description": "Call controls: hold/resume, mute/unmute, transfer, DTMF, direction, duration",
+    "created": "2026-04-26T23:25:40Z"
+  },
+  "plan": {
+    "title": "Call Controls: hold, mute, transfer, DTMF, direction, duration",
+    "status": "proposed",
+    "narrative": {
+      "Summary": "Adds the call control surface that Zoom/Meet/telephony agents need beyond the basic lifecycle. Covers: hold()/resume() to pause and resume a call; mute(type)/unmute(type) to silence specific channels without ending them; transfer(endpoint) for blind transfer (escalation to human agent); dtmf(tone)/onDTMF(cb) to send and receive touch-tones for IVR navigation; call.direction as an inbound/outbound indicator; call.duration for elapsed time. All items are added to the Call interface with MockCall implementations and tests. WhatsApp/real provider implementations are no-ops or stubs with clear TODOs.",
+      "Traces": "NFR-1 (>=85% coverage)",
+      "Acceptance": "Call interface has hold(), resume(), mute(type), unmute(type), muted(), transfer(endpoint), dtmf(tone), onDTMF(cb), readonly direction, readonly duration. MockCall implements all. Tests cover: hold() transitions to held; resume() transitions to connected; mute('audio') adds to muted set; unmute removes; muted() returns current set; transfer() resolves without error (no-op mock); dtmf() sends tone; onDTMF receives simulated tones; direction is 'inbound'|'outbound'; duration increments. task check passes.",
+      "Dependencies": "All prior scopes complete."
+    },
+    "items": [
+      {
+        "id": "ctrl-1",
+        "title": "src/types.ts — add DtmfTone union, CallDirection type",
+        "status": "proposed",
+        "narrative": "DtmfTone = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'|'*'|'#'|'A'|'B'|'C'|'D'. CallDirection = 'inbound' | 'outbound'. Both exported from src/index.ts."
+      },
+      {
+        "id": "ctrl-2",
+        "title": "src/interfaces/call.ts — add hold, resume, mute, unmute, muted, transfer, dtmf, onDTMF, direction, duration",
+        "status": "proposed",
+        "narrative": "hold(): Promise<void> — transitions to held state. resume(): Promise<void> — transitions back to connected. mute(type: MediaType): Promise<void> — silences a channel without deactivating it. unmute(type: MediaType): Promise<void> — un-silences. muted(): ReadonlySet<MediaType> — what is currently muted. transfer(endpoint: Endpoint): Promise<void> — blind transfer; ends this call and connects remote to new destination. dtmf(tone: DtmfTone): Promise<void> — send DTMF tone. onDTMF(cb: (tone: DtmfTone) => void): void — receive DTMF. readonly direction: CallDirection — 'inbound' if call arrived, 'outbound' if dialled. readonly duration: number — elapsed milliseconds since connected (0 if not yet connected)."
+      },
+      {
+        "id": "ctrl-3",
+        "title": "src/providers/mock/mock-call.ts — implement all controls",
+        "status": "proposed",
+        "narrative": "hold(): transitions _state to held, emits 'state'. resume(): transitions to connected. mute(type): adds to _mutedChannels set. unmute(type): removes from set. muted(): returns _mutedChannels. transfer(endpoint): fires onTransfer callbacks (or no-op). dtmf(tone): fires onDTMF callbacks. onDTMF(cb): registers callback; _simulateDTMF(tone) helper for tests. direction: set in constructor based on a 'inbound'|'outbound' parameter. duration: computed from _connectedAt timestamp."
+      },
+      {
+        "id": "ctrl-4",
+        "title": "WhatsApp + ConnectionManager stubs",
+        "status": "proposed",
+        "narrative": "WhatsAppConnectionManager: add optional holdCall?(callId): Promise<void>, resumeCall?(callId): Promise<void>, transferCall?(callId, to): Promise<void>, sendDTMF?(callId, tone): Promise<void>. WhatsAppCall: delegates to manager if method exists, otherwise returns Promise.resolve() with a console.warn. direction: inbound for received events, outbound for dial(). duration: computed from _connectedAt."
+      },
+      {
+        "id": "ctrl-5",
+        "title": "Tests: test/mock/call-controls.test.ts",
+        "status": "proposed",
+        "narrative": "hold() → state=held; resume() → state=connected; hold() when not connected → CallError. mute('audio') → muted() has 'audio'; unmute → removed. muted() is empty initially. transfer(endpoint) → resolves. dtmf('5') + onDTMF → callback fires. direction = 'inbound' for ring(), 'outbound' for dial(). duration = 0 before connected, > 0 after."
+      }
+    ]
+  }
+}
