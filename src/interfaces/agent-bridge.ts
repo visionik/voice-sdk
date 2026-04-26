@@ -21,6 +21,25 @@ export interface STTProvider {
 }
 
 /**
+ * A vision provider that describes video frames.
+ *
+ * Receives individual frames and yields structured descriptions,
+ * enabling agents to understand what is happening visually on a call.
+ */
+export interface VisionProvider {
+  /**
+   * Describe a sequence of video frames, yielding descriptions as they are ready.
+   *
+   * @param frames - Stream of `{ frame: Buffer, timestamp: number }` objects.
+   * @returns An async iterable of description segments.
+   */
+  describe(frames: AsyncIterable<{ frame: Buffer; timestamp: number }>): AsyncIterable<{
+    description: string;
+    timestamp: number;
+  }>;
+}
+
+/**
  * A text-to-speech provider that synthesises speech from text.
  */
 export interface TTSProvider {
@@ -51,7 +70,7 @@ export interface TTSProvider {
  * bridge.ear(mySTT);
  * bridge.mouth(myTTS);
  *
- * bridge.onTranscript((transcript) => {
+ * bridge.onHeard((transcript) => {
  *   // Send to LLM, then reply:
  *   void bridge.say("Hello, I heard you say: " + transcript);
  * });
@@ -66,9 +85,7 @@ export interface AgentBridge {
    *
    * @param callback - Receives the transcript, confidence score, and optional metadata.
    */
-  onTranscript(
-    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
-  ): void;
+  onHeard(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void;
 
   /**
    * Synthesise `text` via the current TTS provider and inject it into the call.
@@ -97,7 +114,7 @@ export interface AgentBridge {
    * Get the current STT provider (no args) or set it (with arg).
    *
    * - `bridge.ear()` — returns current {@link STTProvider} or `undefined`
-   * - `bridge.ear(p)` — sets the provider; affects subsequent {@link AgentBridge.onTranscript} callbacks
+   * - `bridge.ear(p)` — sets the provider; affects subsequent {@link AgentBridge.onHeard} callbacks
    */
   ear(): STTProvider | undefined;
   ear(provider: STTProvider): void;
@@ -110,4 +127,22 @@ export interface AgentBridge {
    */
   mouth(): TTSProvider | undefined;
   mouth(provider: TTSProvider): void;
+
+  /**
+   * Get the current vision provider (no args) or set it (with arg).
+   *
+   * - `bridge.eyes()` — returns current {@link VisionProvider} or `undefined`
+   * - `bridge.eyes(p)` — sets the provider; auto-wires `call.receive('video')` → descriptions → `onSeen`
+   */
+  eyes(): VisionProvider | undefined;
+  eyes(provider: VisionProvider): void;
+
+  /**
+   * Register a callback that fires when the vision provider produces a description.
+   *
+   * Requires a {@link VisionProvider} set via {@link AgentBridge.eyes}.
+   *
+   * @param callback - Receives the description and the source timestamp.
+   */
+  onSeen(callback: (description: string, timestamp: number) => void): void;
 }

@@ -22,7 +22,7 @@ export type IncomingCallHandler = (call: Call) => void;
  * const provider = new MockVoiceProvider();
  * provider.onCall(async (call) => {
  *   await call.accept();
- *   call.agent().onTranscript((t) => console.log('heard:', t));
+ *   call.agent().onHeard((t) => console.log('heard:', t));
  * });
  *
  * const call = provider.ring({ type: 'whatsapp', id: '+1234' });
@@ -111,7 +111,7 @@ export class MockVoiceProvider implements VoiceProvider {
    * Deliver a voice transcript to the agent bridge of the call with `callId`.
    *
    * This simulates what would happen after STT processes the call's audio —
-   * all callbacks registered via `onTranscript` will fire.
+   * all callbacks registered via `onHeard` will fire.
    *
    * @param callId     - The {@link Call.id} to deliver transcript to.
    * @param transcript - The recognised speech text.

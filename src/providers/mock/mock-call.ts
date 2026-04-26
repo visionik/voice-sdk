@@ -192,7 +192,7 @@ export class MockCall extends EventEmitter implements Call {
   }
 
   /**
-   * Trigger `onTranscript` callbacks on the bridge — as if the STT provider
+   * Trigger `onHeard` callbacks on the bridge — as if the STT provider
    * produced a transcript for the call's audio stream.
    *
    * @internal

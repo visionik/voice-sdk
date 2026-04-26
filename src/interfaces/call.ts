@@ -31,7 +31,7 @@ import type {
  * await call.accept({ mediaTypes: ['audio'] });
  *
  * const agent = call.agent();
- * agent.onTranscript((transcript) => {
+ * agent.onHeard((transcript) => {
  *   void agent.say('You said: ' + transcript);
  * });
  * ```

@@ -1,4 +1,9 @@
-import type { AgentBridge, STTProvider, TTSProvider } from "../interfaces/agent-bridge.js";
+import type {
+  AgentBridge,
+  STTProvider,
+  TTSProvider,
+  VisionProvider,
+} from "../interfaces/agent-bridge.js";
 import type { Call } from "../interfaces/call.js";
 import type { MediaSource, TTSOptions } from "../types.js";
 
@@ -24,9 +29,11 @@ import type { MediaSource, TTSOptions } from "../types.js";
 export class BaseAgentBridge implements AgentBridge {
   private _sttProvider?: STTProvider;
   private _ttsProvider?: TTSProvider;
+  private _visionProvider?: VisionProvider;
   private readonly _voiceInputCallbacks: Array<
     (transcript: string, confidence: number, metadata?: unknown) => void
   > = [];
+  private readonly _seenCallbacks: Array<(description: string, timestamp: number) => void> = [];
 
   /**
    * @param call - The call this bridge is attached to.
@@ -36,9 +43,7 @@ export class BaseAgentBridge implements AgentBridge {
   constructor(private readonly call: Call) {}
 
   /** @inheritdoc */
-  onTranscript(
-    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
-  ): void {
+  onHeard(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void {
     this._voiceInputCallbacks.push(callback);
   }
 
@@ -73,12 +78,32 @@ export class BaseAgentBridge implements AgentBridge {
     this._ttsProvider = provider;
   }
 
+  eyes(): VisionProvider | undefined;
+  eyes(provider: VisionProvider): void;
+  eyes(provider?: VisionProvider): VisionProvider | undefined | void {
+    if (provider === undefined) return this._visionProvider;
+    this._visionProvider = provider;
+    // Auto-wiring of eyes → receive('video') → onSeen is part of the
+    // media-pipeline scope (tee fan-out). Placeholder for now.
+  }
+
+  onSeen(callback: (description: string, timestamp: number) => void): void {
+    this._seenCallbacks.push(callback);
+  }
+
+  /** @internal — called by the vision pipeline once implemented. */
+  _triggerSeen(description: string, timestamp: number): void {
+    for (const cb of this._seenCallbacks) {
+      cb(description, timestamp);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Internal API — used by mock/provider implementations
   // ---------------------------------------------------------------------------
 
   /**
-   * Dispatch a voice transcript to all registered `onTranscript` callbacks.
+   * Dispatch a voice transcript to all registered `onHeard` callbacks.
    *
    * Called by {@link MockVoiceProvider.speak} and by real
    * provider implementations when STT output is available.

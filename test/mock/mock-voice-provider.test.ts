@@ -138,12 +138,12 @@ describe("MockVoiceProvider.setState", () => {
 // ---------------------------------------------------------------------------
 
 describe("MockVoiceProvider.speak", () => {
-  it("fires onTranscript with transcript and confidence", () => {
+  it("fires onHeard with transcript and confidence", () => {
     const provider = new MockVoiceProvider();
     const call = provider.ring(WA_ENDPOINT);
 
     const captured: Array<{ transcript: string; confidence: number }> = [];
-    call.agent().onTranscript((t, c) => captured.push({ transcript: t, confidence: c }));
+    call.agent().onHeard((t, c) => captured.push({ transcript: t, confidence: c }));
 
     provider.speak(call.id, "hello world", 0.97);
 
@@ -155,7 +155,7 @@ describe("MockVoiceProvider.speak", () => {
     const call = provider.ring(WA_ENDPOINT);
 
     let capturedConfidence = 0;
-    call.agent().onTranscript((_t, c) => (capturedConfidence = c));
+    call.agent().onHeard((_t, c) => (capturedConfidence = c));
 
     provider.speak(call.id, "test");
 
