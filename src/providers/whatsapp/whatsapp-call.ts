@@ -36,7 +36,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
   private _state: CallState = "ringing";
   private _mode: CallMode = "full-duplex";
   private readonly _direction: CallDirection;
-  private _connectedAt?: number;
+  private _connectedAt: number | undefined = undefined;
   private readonly _activeMedia = new Set<MediaType>();
   private readonly _mutedChannels = new Set<MediaType>();
   private readonly _bridge: BaseAgentBridge;
