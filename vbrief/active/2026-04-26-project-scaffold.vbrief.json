@@ -1,0 +1,68 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "author": "agent:deft-directive-setup",
+    "description": "Phase 1.1 — Project scaffold",
+    "created": "2026-04-26T20:18:10Z"
+  },
+  "plan": {
+    "title": "Project Scaffold",
+    "status": "active",
+    "narrative": {
+      "Summary": "Initialize the openclaw-voice-sdk repository with the full toolchain: pnpm workspace, TypeScript 6, tsdown build, vitest test framework, oxlint linter, Taskfile. Includes package.json for @openclaw/voice-sdk, tsconfig.json, tsdown.config.ts, vitest.config.ts, oxlint.json, Taskfile.yml with check/test/build/lint/fmt/release tasks, .gitignore, CHANGELOG.md, and README stub. This scope has no source code — it is the foundation all subsequent scopes depend on.",
+      "Traces": "NFR-2 (Node.js 22+), NFR-3 (ESM-only tsdown), NFR-5 (Conventional Commits), NFR-6 (npm publish config)",
+      "Acceptance": "task check runs without error on an empty src/index.ts. task build produces dist/index.js and dist/index.d.ts. package.json exports map is correct. README contains a 'voice in the telecom sense' note explaining the name covers voice/video/screen/data.",
+      "Dependencies": "None — this is the root scope."
+    },
+    "items": [
+      {
+        "id": "scaffold-1",
+        "title": "Initialize git repo and pnpm workspace",
+        "status": "proposed",
+        "narrative": "git init, pnpm init, set packageManager field, add .npmrc with shamefully-hoist=false, add .gitignore."
+      },
+      {
+        "id": "scaffold-2",
+        "title": "Configure package.json for @openclaw/voice-sdk",
+        "status": "proposed",
+        "narrative": "name: @openclaw/voice-sdk, version: 0.1.0, type: module, engines: node>=22, exports map for ./index and ./providers/whatsapp and ./providers/mock entry points. files: [dist/]. bin entry for cli harness."
+      },
+      {
+        "id": "scaffold-3",
+        "title": "TypeScript configuration",
+        "status": "proposed",
+        "narrative": "tsconfig.json: target ES2023, module NodeNext, moduleResolution NodeNext, strict true, lib [ES2023]. tsconfig.build.json extends base, excludes test/. No DOM lib (NFR-2)."
+      },
+      {
+        "id": "scaffold-4",
+        "title": "Build toolchain: tsdown",
+        "status": "proposed",
+        "narrative": "tsdown.config.ts: ESM output to dist/, sourcemaps, dts generation. Entry: src/index.ts, cli/index.ts. Mirror openclaw's tsdown patterns."
+      },
+      {
+        "id": "scaffold-5",
+        "title": "Test framework: vitest",
+        "status": "proposed",
+        "narrative": "vitest.config.ts: globals false, coverage via @vitest/coverage-v8 targeting >=85% (NFR-1), test pattern test/**/*.test.ts."
+      },
+      {
+        "id": "scaffold-6",
+        "title": "Linting: oxlint",
+        "status": "proposed",
+        "narrative": "oxlint.json mirroring openclaw config. Add oxfmt for formatting."
+      },
+      {
+        "id": "scaffold-7",
+        "title": "Taskfile.yml with core tasks",
+        "status": "proposed",
+        "narrative": "Tasks: default (task --list), build (tsdown), test (vitest run), lint (oxlint), fmt (oxfmt), check (deps: lint, build, test), release (npm publish --dry-run gate). Include deft tasks via optional include of ./directive/Taskfile.yml."
+      },
+      {
+        "id": "scaffold-8",
+        "title": "Stub src/index.ts and README.md",
+        "status": "proposed",
+        "narrative": "Empty barrel export. README with project name, one-liner description, 'voice in the telecom sense' note, and install instructions placeholder."
+      }
+    ]
+  }
+}

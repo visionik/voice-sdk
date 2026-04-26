@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.coverage/
+coverage/
+*.tsbuildinfo
+.artifacts/
+.premigrate.*
+secrets/
+*.local
+.env
+.env.*
+!.env.example

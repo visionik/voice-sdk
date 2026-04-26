@@ -1,0 +1,44 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "author": "agent:deft-directive-setup",
+    "description": "Phase 5 — Polish, documentation, and npm publish",
+    "created": "2026-04-26T20:18:10Z"
+  },
+  "plan": {
+    "title": "Polish and Publish",
+    "status": "proposed",
+    "narrative": {
+      "Summary": "Final polish pass before the first npm release: complete README with API reference and usage examples (voice/video/agent-bridge), fill CHANGELOG with v0.1.0 entry, configure npm publish (provenance, access:public, .npmignore), run npm publish dry-run to verify the package output, and confirm importability from a test consumer. Conventional Commits enforced throughout.",
+      "Traces": "NFR-5 (Conventional Commits), NFR-6 (npm publish as @openclaw/voice-sdk)",
+      "Acceptance": "npm publish --dry-run exits 0. Package tarball contains dist/, README.md, CHANGELOG.md, LICENSE. A minimal test consumer (test/consumer/index.ts) imports @openclaw/voice-sdk and types resolve correctly. README explains 'voice in the telecom sense' and documents VoiceProvider, Call, AgentBridge, MockVoiceProvider, WhatsAppVoiceProvider APIs with code examples.",
+      "Dependencies": "All prior scopes (scaffold, types, mock, whatsapp, cli) must be complete."
+    },
+    "items": [
+      {
+        "id": "publish-1",
+        "title": "README.md — complete API documentation",
+        "status": "proposed",
+        "narrative": "Sections: About (telecom-sense note, voice/video/screen/data), Install, Quick Start (incoming call with MockProvider + AgentBridge), API Reference (VoiceProvider, Call, AgentBridge, MediaSource, CallOptions, CallError), Provider Guide (WhatsAppVoiceProvider + DI setup), Testing Guide (MockVoiceProvider usage), Contributing."
+      },
+      {
+        "id": "publish-2",
+        "title": "CHANGELOG.md — v0.1.0 entry",
+        "status": "proposed",
+        "narrative": "Follow Keep a Changelog format. v0.1.0 entry: Added VoiceProvider/Call/AgentBridge interfaces, MockVoiceProvider, WhatsAppVoiceProvider (DI), BaseAgentBridge, CLI harness, CallError, MediaService. Note telecom-sense naming."
+      },
+      {
+        "id": "publish-3",
+        "title": "npm publish configuration",
+        "status": "proposed",
+        "narrative": ".npmignore: exclude src/, test/, vbrief/, directive/, *.config.ts, Taskfile.yml. package.json: publishConfig.access=public, provenance if using npm provenance. Add task release to Taskfile: runs task check, then npm publish --dry-run (gate requiring --live flag to actually publish)."
+      },
+      {
+        "id": "publish-4",
+        "title": "test/consumer/index.ts — import smoke test",
+        "status": "proposed",
+        "narrative": "Minimal file: import { MockVoiceProvider, type Call, type VoiceProvider } from '@openclaw/voice-sdk'. Compile this file against the published dist/ to verify type declarations resolve. Run as part of task check via tsc --noEmit."
+      }
+    ]
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "author": "agent:deft-directive-setup",
+    "description": "Specification for @openclaw/voice-sdk",
+    "created": "2026-04-26T19:58:30Z"
+  },
+  "plan": {
+    "title": "@openclaw/voice-sdk Specification",
+    "status": "approved",
+    "narratives": {
+      "Overview": "@openclaw/voice-sdk is a provider-agnostic, media-rich, agent-first TypeScript SDK for voice/video/screen/data call management. Inspired by Voxeo Moho. Defines the shared Call abstraction layer that all OpenClaw channel providers (WhatsApp, Twilio, Discord, WebRTC) implement and that AI agents consume via a standardized AgentBridge.",
+
+      "ProblemStatement": "OpenClaw's plugin SDK contains provider-specific voice bindings (realtime-voice, voice-call, speech) but no unified Call abstraction. Channel plugin authors must invent their own call lifecycle management per provider. AI agents have no standard bridge interface to intercept calls and inject STT/TTS responses. The missing piece is a shared contract: a Call interface that all providers plug into and that agents can consume uniformly.",
+
+      "Goals": "Primary: (1) Define a provider-agnostic VoiceProvider + Call interface covering the full lifecycle (initialized → ringing → connecting → connected → held → ended → failed). (2) Expose an AgentBridge on every Call so AI agents can receive transcriptions and inject TTS responses. (3) Ship a WhatsApp reference implementation that respects the single-socket constraint via dependency injection. (4) Ship a MockVoiceProvider for deterministic testing. (5) Publish as @openclaw/voice-sdk on npm. Non-goals for v1: no WebRTC browser implementation; no Twilio/Discord implementations; no bundled STT/TTS providers (interface only).",
+
+      "UserStories": "US-1: As a WhatsApp channel plugin author, I implement VoiceProvider so my channel handles calls through the shared Call lifecycle. US-2: As an AI agent developer, I use AgentBridge to receive voice transcriptions and inject TTS responses into an active call. US-3: As a developer testing my agent, I use MockVoiceProvider to simulate incoming/outgoing calls without a real network. US-4: As an OpenClaw extension author, I use the CLI harness to manually test call scenarios from the terminal.",
+
+      "Requirements": "FR-1: VoiceProvider interface with createCall(endpoint, options) and joinGroupCall(groupId, options) returning Promise<Call>. FR-2: Call interface extending EventEmitter with state machine (accept/reject/hangup/upgradeMode/upgradeMedia) and events (state, media, error). FR-3: Media API uses MediaSource = AsyncIterable<Buffer> for getMediaStream() and sendMedia() — Node-native, no DOM dependency. FR-4: CallOptions includes mediaTypes, mode (listen-only/talkback/full-duplex), quality, autoJoin, record, retryPolicy. RetryPolicy is configurable per-call. FR-5: AgentBridge on every Call exposes onVoiceInput callback, injectTTS(text, options), injectAudio(stream), setSTTProvider(p), setTTSProvider(p). FR-6: WhatsAppVoiceProvider implements VoiceProvider; constructor takes WhatsAppConnectionManager (DI); handles single-socket constraint. FR-7: MockVoiceProvider simulates full call lifecycle with programmatic control for tests (triggerIncoming, simulateStateChange, simulateVoiceInput). FR-8: CallError class with typed code union (timeout/rejected/media-failure/unauthorized/group-full). FR-9: CLI harness (openclaw-voice CLI) for interactive call testing — simulate incoming calls, capture audio output. FR-10: Text channel on Call (sendText/onText, CallTextMessage with id/text/from/timestamp/mentions). NFR-1: >=85% test coverage. NFR-2: No DOM dependency; pure Node.js 22+. NFR-3: ESM-only package built with tsdown; type declarations included. NFR-4: Zero runtime dependencies in the core types package; WhatsApp provider may depend on @whiskeysockets/baileys. NFR-5: Conventional Commits. NFR-6: Published to npm as @openclaw/voice-sdk.",
+
+      "SuccessMetrics": "All FR requirements implemented with tests. WhatsApp provider handles simulated incoming call with mock socket (unit test passes). MockProvider enables full agent-bridge round-trip test: voice-in → STT callback → LLM mock response → TTS inject → audio-out (integration test passes). task check passes at >=85% coverage. Package importable in a test consumer after npm publish dry-run.",
+
+      "Architecture": "Single repo at /Users/visionik/Projects/visionik/openclaw-voice-sdk. Structure: src/types.ts (MediaType/CallState/CallMode/Endpoint/CallOptions/CallTextMessage/RetryPolicy), src/errors.ts (CallError), src/interfaces/ (voice-provider.ts, call.ts, agent-bridge.ts, stt-provider.ts, tts-provider.ts, media-service.ts), src/providers/whatsapp/ (WhatsAppConnectionManager interface, WhatsAppVoiceProvider class), src/providers/mock/ (MockVoiceProvider, MockCallHandle), src/index.ts (barrel). CLI in cli/ dir. Tests mirror src/ under test/. Taskfile.yml with tasks: check, test, build, lint, fmt, dev, release. tsdown.config.ts for ESM build. vitest.config.ts for tests. oxlint.json for linting."
+    },
+    "items": []
+  }
+}

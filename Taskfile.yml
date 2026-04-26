@@ -1,0 +1,66 @@
+version: "3"
+
+includes:
+  deft:
+    taskfile: ./directive/Taskfile.yml
+    optional: true
+
+tasks:
+  default:
+    desc: List all available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  build:
+    desc: Build the SDK with tsdown
+    cmds:
+      - pnpm run build
+
+  typecheck:
+    desc: Type-check without emitting
+    cmds:
+      - pnpm exec tsc --noEmit -p tsconfig.test.json
+
+  lint:
+    desc: Lint with oxlint
+    cmds:
+      - pnpm run lint
+
+  fmt:
+    desc: Format source with oxfmt
+    cmds:
+      - pnpm run fmt
+
+  fmt:check:
+    desc: Check formatting without writing
+    cmds:
+      - pnpm run fmt:check
+
+  test:
+    desc: Run tests with vitest
+    cmds:
+      - pnpm run test
+
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - pnpm run test:coverage
+
+  check:
+    desc: Full quality gate — lint, fmt:check, typecheck, build, test
+    deps: [lint, fmt:check, typecheck, build, test]
+
+  release:
+    desc: "Publish to npm (add --live to actually publish; default is dry-run)"
+    vars:
+      LIVE: '{{.LIVE | default ""}}'
+    cmds:
+      - task: check
+      - |
+        if [ "{{.LIVE}}" = "true" ]; then
+          pnpm publish --access public
+        else
+          echo "Dry-run (pass LIVE=true to publish for real):"
+          pnpm publish --dry-run --access public
+        fi

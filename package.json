@@ -1,0 +1,74 @@
+{
+  "name": "@openclaw/voice-sdk",
+  "version": "0.1.0",
+  "description": "Provider-agnostic, media-rich, agent-first voice/video/screen/data call SDK for OpenClaw. 'Voice' in the telecom sense — covers audio, video, screen, and data channels.",
+  "keywords": [
+    "agent",
+    "call",
+    "openclaw",
+    "sip",
+    "video",
+    "voice",
+    "webrtc",
+    "whatsapp"
+  ],
+  "homepage": "https://github.com/openclaw/voice-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/openclaw/voice-sdk/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openclaw/voice-sdk.git"
+  },
+  "bin": {
+    "openclaw-voice": "./dist/cli/index.mjs"
+  },
+  "files": [
+    "dist/",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./providers/whatsapp": {
+      "types": "./dist/providers/whatsapp/index.d.mts",
+      "default": "./dist/providers/whatsapp/index.mjs"
+    },
+    "./providers/mock": {
+      "types": "./dist/providers/mock/index.d.mts",
+      "default": "./dist/providers/mock/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --config .oxlintrc.json src cli",
+    "fmt": "oxfmt --write",
+    "fmt:check": "oxfmt --check",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check": "pnpm run lint && pnpm run fmt:check && pnpm run typecheck && pnpm run build && pnpm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.4",
+    "oxfmt": "0.45.0",
+    "oxlint": "^1.60.0",
+    "tsdown": "0.21.9",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.32.1"
+}

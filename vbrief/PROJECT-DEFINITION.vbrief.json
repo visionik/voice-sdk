@@ -1,0 +1,22 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "author": "agent:deft-directive-setup",
+    "description": "Project identity gestalt",
+    "created": "2026-04-26T19:58:30Z"
+  },
+  "plan": {
+    "title": "openclaw-voice-sdk",
+    "status": "running",
+    "narratives": {
+      "Overview": "TypeScript SDK (@openclaw/voice-sdk) providing a provider-agnostic, media-rich, agent-first voice/video/screen/data call abstraction. Inspired by Moho (Voxeo). Supports WhatsApp, Twilio, Discord, SIP, and WebRTC providers via a shared VoiceProvider interface. Single WASocket constraint respected via shared connection manager.",
+      "TechStack": "Library + CLI using TypeScript 6, Node.js 22+ — pnpm, tsdown, vitest, oxlint",
+      "Strategy": "Use interview for this project",
+      "Quality": "Run task check before every commit. Achieve >= 85% coverage overall + per-module. Store secrets in secrets/ dir.",
+      "ProjectRules": "No project-specific rules defined.",
+      "Branching": "Allow direct commits to master: true",
+      "DeftVersion": "0.20.0"
+    },
+    "items": []
+  }
+}
