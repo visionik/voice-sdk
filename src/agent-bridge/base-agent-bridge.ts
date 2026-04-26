@@ -37,7 +37,9 @@ export class BaseAgentBridge implements AgentBridge {
   constructor(private readonly call: Call) {}
 
   /** @inheritdoc */
-  onSpeech(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void {
+  onTranscript(
+    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
+  ): void {
     this._voiceInputCallbacks.push(callback);
   }
 
@@ -78,7 +80,7 @@ export class BaseAgentBridge implements AgentBridge {
   // ---------------------------------------------------------------------------
 
   /**
-   * Dispatch a voice transcript to all registered `onSpeech` callbacks.
+   * Dispatch a voice transcript to all registered `onTranscript` callbacks.
    *
    * Called by {@link MockVoiceProvider.speak} and by real
    * provider implementations when STT output is available.

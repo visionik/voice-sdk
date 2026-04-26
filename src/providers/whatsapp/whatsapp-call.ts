@@ -112,9 +112,9 @@ export class WhatsAppCall extends EventEmitter implements Call {
     return Promise.resolve();
   }
 
-  media(): ReadonlySet<MediaType>;
-  media(newMedia: MediaType[]): Promise<void>;
-  media(newMedia?: MediaType[]): ReadonlySet<MediaType> | Promise<void> {
+  channels(): ReadonlySet<MediaType>;
+  channels(newMedia: MediaType[]): Promise<void>;
+  channels(newMedia?: MediaType[]): ReadonlySet<MediaType> | Promise<void> {
     if (newMedia === undefined) return this._activeMedia;
     if (this._state !== "connected") {
       return Promise.reject(

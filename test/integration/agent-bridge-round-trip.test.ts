@@ -3,7 +3,7 @@
  *
  * Exercises the complete path:
  *   ring → accept → attach STT/TTS → speak
- *   → onSpeech callback → say → TTS.synthesize → send
+ *   → onTranscript callback → say → TTS.synthesize → send
  */
 import { describe, expect, it, vi } from "vitest";
 import type { MediaSource, TTSOptions } from "../../src/types.js";
@@ -43,13 +43,13 @@ function makeSTT(): {
 // Round-trip: voice input → STT callback
 // ---------------------------------------------------------------------------
 
-describe("AgentBridge onSpeech", () => {
+describe("AgentBridge onTranscript", () => {
   it("fires callback when speak is called", () => {
     const provider = new MockVoiceProvider();
     const call = provider.ring(ENDPOINT);
 
     const captured: Array<{ t: string; c: number }> = [];
-    call.agent().onSpeech((t, c) => captured.push({ t, c }));
+    call.agent().onTranscript((t, c) => captured.push({ t, c }));
 
     provider.speak(call.id, "what time is it", 0.88);
 
@@ -62,8 +62,8 @@ describe("AgentBridge onSpeech", () => {
     const bridge = call.agent();
 
     const results: string[] = [];
-    bridge.onSpeech((t) => results.push(`a:${t}`));
-    bridge.onSpeech((t) => results.push(`b:${t}`));
+    bridge.onTranscript((t) => results.push(`a:${t}`));
+    bridge.onTranscript((t) => results.push(`b:${t}`));
 
     provider.speak(call.id, "hello");
 
@@ -158,7 +158,7 @@ describe("Full agent round-trip", () => {
 
     // Simulate the agent pattern: react to voice, inject TTS response
     const agentReplied: string[] = [];
-    bridge.onSpeech(async (transcript) => {
+    bridge.onTranscript(async (transcript) => {
       agentReplied.push(transcript);
       await bridge.say(`You said: ${transcript}`);
     });
@@ -166,7 +166,7 @@ describe("Full agent round-trip", () => {
     // Trigger voice input
     provider.speak(call.id, "whats the weather");
 
-    // The onSpeech callback is async (fire-and-forget from the bridge's
+    // The onTranscript callback is async (fire-and-forget from the bridge's
     // perspective). setImmediate drains all pending microtasks so the async
     // generator inside say fully completes before we assert.
     await new Promise<void>((resolve) => setImmediate(resolve));

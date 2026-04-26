@@ -150,7 +150,7 @@ void _tts;
 
 // AgentBridge structural check
 const _bridge: AgentBridge = {
-  onSpeech: (_cb: (t: string, c: number) => void): void => {},
+  onTranscript: (_cb: (t: string, c: number) => void): void => {},
   say: async (_text: string): Promise<void> => {},
   play: async (_s: MediaSource): Promise<void> => {},
   setSTT: (_p: STTProvider): void => {},

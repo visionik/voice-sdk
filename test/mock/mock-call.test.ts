@@ -71,8 +71,8 @@ describe("MockCall state machine", () => {
   it("media() adds new media types", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    await call.media(["audio", "video"]);
-    expect(call.media().has("video")).toBe(true);
+    await call.channels(["audio", "video"]);
+    expect(call.channels().has("video")).toBe(true);
   });
 
   it("media() emits media events for newly added types", async () => {
@@ -82,7 +82,7 @@ describe("MockCall state machine", () => {
     const mediaEvents: Array<{ type: string; active: boolean }> = [];
     call.on("media", (t, a) => mediaEvents.push({ type: t, active: a }));
 
-    await call.media(["audio", "video"]);
+    await call.channels(["audio", "video"]);
     expect(mediaEvents).toContainEqual({ type: "video", active: true });
     // audio was already active — no duplicate event
     expect(mediaEvents.filter((e) => e.type === "audio")).toHaveLength(0);
@@ -191,10 +191,10 @@ describe("MockCall agent bridge", () => {
     expect(call.agent()).toBe(call.agent());
   });
 
-  it("_triggerVoiceInput fires onSpeech callbacks via bridge", () => {
+  it("_triggerVoiceInput fires onTranscript callbacks via bridge", () => {
     const call = makeCall();
     const transcripts: string[] = [];
-    call.agent().onSpeech((t) => transcripts.push(t));
+    call.agent().onTranscript((t) => transcripts.push(t));
 
     call._triggerVoiceInput("hello there", 0.95);
 

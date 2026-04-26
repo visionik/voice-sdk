@@ -40,7 +40,7 @@ describe("WhatsAppCall initial state", () => {
   });
 
   it("no active media initially", () => {
-    expect(makeCall().call.media().size).toBe(0);
+    expect(makeCall().call.channels().size).toBe(0);
   });
 
   it("id is derived from the callId in the event", () => {
@@ -86,14 +86,14 @@ describe("WhatsAppCall accept()", () => {
   it("activates audio by default", async () => {
     const { call } = makeCall();
     await call.accept();
-    expect(call.media().has("audio")).toBe(true);
+    expect(call.channels().has("audio")).toBe(true);
   });
 
   it("activates the specified mediaTypes", async () => {
     const { call } = makeCall();
     await call.accept({ mediaTypes: ["audio", "video"] });
-    expect(call.media().has("audio")).toBe(true);
-    expect(call.media().has("video")).toBe(true);
+    expect(call.channels().has("audio")).toBe(true);
+    expect(call.channels().has("video")).toBe(true);
   });
 
   it("throws CallError when already connected", async () => {
@@ -171,8 +171,8 @@ describe("WhatsAppCall mode/media", () => {
   it("media adds new types", async () => {
     const { call } = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    await call.media(["audio", "video"]);
-    expect(call.media().has("video")).toBe(true);
+    await call.channels(["audio", "video"]);
+    expect(call.channels().has("video")).toBe(true);
   });
 });
 

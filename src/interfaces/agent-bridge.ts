@@ -51,7 +51,7 @@ export interface TTSProvider {
  * bridge.setSTT(mySTT);
  * bridge.setTTS(myTTS);
  *
- * bridge.onSpeech((transcript) => {
+ * bridge.onTranscript((transcript) => {
  *   // Send to LLM, then reply:
  *   void bridge.say("Hello, I heard you say: " + transcript);
  * });
@@ -66,7 +66,9 @@ export interface AgentBridge {
    *
    * @param callback - Receives the transcript, confidence score, and optional metadata.
    */
-  onSpeech(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void;
+  onTranscript(
+    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
+  ): void;
 
   /**
    * Register a callback that fires for each incoming video frame.
@@ -101,7 +103,7 @@ export interface AgentBridge {
 
   /**
    * Replace the active STT provider.
-   * Affects all subsequent calls to {@link AgentBridge.onSpeech}.
+   * Affects all subsequent calls to {@link AgentBridge.onTranscript}.
    *
    * @param provider - The new STT provider.
    */

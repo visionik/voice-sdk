@@ -31,7 +31,7 @@ import type {
  * await call.accept({ mediaTypes: ['audio'] });
  *
  * const agent = call.agent();
- * agent.onSpeech((transcript) => {
+ * agent.onTranscript((transcript) => {
  *   void agent.say('You said: ' + transcript);
  * });
  * ```
@@ -88,11 +88,11 @@ export interface Call extends EventEmitter {
   /**
    * Get the active media set (no args) or activate new types (with arg).
    *
-   * - `call.media()` — returns current `ReadonlySet<MediaType>`
-   * - `call.media(types)` — activates channels; throws {@link CallError} `"media-failure"` if denied
+   * - `call.channels()` — returns current `ReadonlySet<MediaType>`
+   * - `call.channels(types)` — activates channels; throws {@link CallError} `"media-failure"` if denied
    */
-  media(): ReadonlySet<MediaType>;
-  media(newMedia: MediaType[]): Promise<void>;
+  channels(): ReadonlySet<MediaType>;
+  channels(newMedia: MediaType[]): Promise<void>;
 
   // -------------------------------------------------------------------------
   // Media
