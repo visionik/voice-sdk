@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "WhatsApp Voice Provider",
-    "status": "active",
+    "status": "completed",
     "narrative": {
       "Summary": "Implement WhatsAppVoiceProvider: the first real VoiceProvider implementation. Constructor takes a WhatsAppConnectionManager instance (DI pattern). Handles inbound and outbound WhatsApp voice/video calls by delegating to the shared WASocket. Single-socket constraint is enforced by construction — no second socket is ever created. This scope also defines the WhatsAppConnectionManager interface that the openclaw WhatsApp plugin implements.",
       "Traces": "FR-6 (WhatsAppVoiceProvider, DI, single-socket), NFR-4 (zero core deps; WhatsApp provider may depend on @whiskeysockets/baileys)",
@@ -18,31 +18,31 @@
       {
         "id": "wa-1",
         "title": "src/providers/whatsapp/connection-manager.ts — WhatsAppConnectionManager interface",
-        "status": "active",
+        "status": "completed",
         "narrative": "Defines the interface that the openclaw WhatsApp extension must implement to plug into this SDK. Methods: registerVoiceProvider(provider: VoiceProvider): void; onCallEvent(cb: (event: WhatsAppCallEvent) => void): void; answerCall(callId: string, opts?: { video?: boolean }): Promise<void>; rejectCall(callId: string, reason?: string): Promise<void>; joinGroupCall(groupJid: string, opts?: any): Promise<void>. WhatsAppCallEvent = { callId, from, isGroup, isVideo, timestamp }. This is an interface only — no implementation."
       },
       {
         "id": "wa-2",
         "title": "src/providers/whatsapp/whatsapp-call.ts — WhatsAppCall implementation",
-        "status": "active",
+        "status": "completed",
         "narrative": "Implements Call interface for WhatsApp. Backed by a WhatsAppCallEvent and WhatsAppConnectionManager. accept() delegates to manager.answerCall(). reject() delegates to manager.rejectCall(). Audio/video streams bridged from WASocket audio events as AsyncIterable<Buffer>. State driven by WASocket call state events (ringing, connected, ended). getAgentBridge returns a BaseAgentBridge instance wired to this call's media."
       },
       {
         "id": "wa-3",
         "title": "src/providers/whatsapp/whatsapp-voice-provider.ts — WhatsAppVoiceProvider",
-        "status": "active",
+        "status": "completed",
         "narrative": "FR-6. Implements VoiceProvider. name = 'whatsapp'. supportedMedia = ['audio', 'video', 'screen'] as const. Constructor takes manager: WhatsAppConnectionManager and calls manager.registerVoiceProvider(this). createCall creates an outbound WhatsAppCall. joinGroupCall delegates to manager.joinGroupCall. Incoming call events from manager.onCallEvent() are converted to WhatsAppCall instances and surfaced via onCall handlers."
       },
       {
         "id": "wa-4",
         "title": "test/providers/whatsapp/whatsapp-voice-provider.test.ts — unit tests with mock manager",
-        "status": "active",
+        "status": "completed",
         "narrative": "Create a MockWhatsAppConnectionManager that captures registerVoiceProvider calls and allows programmatic call event injection. Test: incoming call event → WhatsAppCall created → accept/reject → correct manager methods called. Test: single-socket invariant (registerVoiceProvider called once). Test: outbound createCall calls manager correctly."
       },
       {
         "id": "wa-5",
         "title": "test/providers/whatsapp/whatsapp-call.test.ts — state machine tests",
-        "status": "active",
+        "status": "completed",
         "narrative": "Using MockWhatsAppConnectionManager: test full lifecycle (ringing → connecting → connected → ended). Test accept with video:false and video:true options. Test error propagation from manager errors into CallError.media-failure."
       }
     ]
