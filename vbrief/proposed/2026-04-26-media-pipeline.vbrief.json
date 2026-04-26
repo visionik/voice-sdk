@@ -1,0 +1,50 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "author": "agent:deft-directive-setup",
+    "description": "Media pipeline: tee fan-out and bridge.ear auto-wiring",
+    "created": "2026-04-26T22:58:44Z"
+  },
+  "plan": {
+    "title": "Media Pipeline: Tee Fan-Out + bridge.ear Auto-Wiring",
+    "status": "proposed",
+    "narrative": {
+      "Summary": "Two closely related improvements to the media streaming model. (1) call.receive(type) currently returns a single-pass MediaStreamQueue that can only be consumed once. Multi-consumer scenarios (bridge STT + custom processing) require a tee that delivers each chunk to all subscribers independently. (2) bridge.ear(stt) currently just stores the provider — it does NOT automatically pipe call.receive('audio') through the STT. The onTranscript callbacks only fire when _triggerVoiceInput is called manually (e.g. MockVoiceProvider.speak). For real audio (WhatsApp, Google Meet), the STT pipeline must auto-start when both ear is set and the call is connected.",
+      "Traces": "FR-5 (AgentBridge auto-wiring), NFR-1 (>=85% coverage)",
+      "Acceptance": "1. call.receive('audio') can be called N times simultaneously; each caller receives all chunks independently (fan-out). 2. bridge.ear(stt) auto-starts consuming call.receive('audio') through stt.transcribe() when call state reaches 'connected'. 3. Setting ear before connected: pipeline starts on 'connected' event. Setting ear after connected: pipeline starts immediately. 4. Clearing ear (bridge.ear(undefined)): pipeline stops. 5. Custom consumer using call.receive('audio') alongside bridge.ear still receives all chunks. 6. AsyncIterable composition pattern documented: users can wrap call.receive() with their own transforms before passing to ear.",
+      "Dependencies": "All prior scopes complete."
+    },
+    "items": [
+      {
+        "id": "pipe-1",
+        "title": "src/providers/whatsapp/media-stream-queue.ts — add fan-out (tee) support",
+        "status": "proposed",
+        "narrative": "Replace or extend MediaStreamQueue with a MulticastMediaQueue that delivers each pushed chunk to all active consumers. API: queue.subscribe() returns a new AsyncIterable<Buffer> per caller. queue.push(chunk) fans out to all active subscribers. queue.end() signals all subscribers. MediaStreamQueue becomes a single-subscriber wrapper for backward compat."
+      },
+      {
+        "id": "pipe-2",
+        "title": "src/interfaces/call.ts — update receive() to return independent streams",
+        "status": "proposed",
+        "narrative": "receive(type) must return a new independent AsyncIterable<Buffer> each call (backed by the MulticastMediaQueue subscription). Each call to receive('audio') gives a fresh subscriber that gets all future chunks from that point forward. Returns null if the channel is not active."
+      },
+      {
+        "id": "pipe-3",
+        "title": "src/agent-bridge/base-agent-bridge.ts — auto-wire ear() to STT pipeline",
+        "status": "proposed",
+        "narrative": "BaseAgentBridge gains a reference to the Call. When ear(stt) is set: if call.state === 'connected', start the pipeline immediately; otherwise subscribe to call's 'state' event and start on 'connected'. Pipeline: for await (segment of stt.transcribe(call.receive('audio'))) { if (segment.isFinal) _triggerVoiceInput(segment.transcript, segment.confidence); }. When ear is cleared (ear(undefined)): stop the pipeline by aborting the async loop via AbortController."
+      },
+      {
+        "id": "pipe-4",
+        "title": "Update MockCall to use MulticastMediaQueue for receive()",
+        "status": "proposed",
+        "narrative": "MockCall._makeTestStream currently returns a new generator per call. After this scope it should use a MulticastMediaQueue so that bridge.ear auto-wiring and direct call.receive() consumers both get the same chunks in tests."
+      },
+      {
+        "id": "pipe-5",
+        "title": "Tests: multi-consumer + auto-wiring integration",
+        "status": "proposed",
+        "narrative": "test/integration/media-pipeline.test.ts: (a) Two consumers call call.receive('audio') simultaneously — both receive all chunks. (b) bridge.ear(mockSTT) set before accept() — onTranscript fires automatically when chunks are pushed after connected. (c) bridge.ear(mockSTT) set after accept() — same result. (d) bridge.ear(undefined) — pipeline stops, no more onTranscript. (e) Custom transform wrapping call.receive('audio') alongside bridge.ear — both receive all chunks."
+      }
+    ]
+  }
+}
