@@ -1,4 +1,4 @@
-import type { MediaSource, TTSOptions } from "../types.js";
+import type { CallTextMessage, MediaSource, TTSOptions } from "../types.js";
 
 /**
  * A speech-to-text provider that transcribes a {@link MediaSource} audio stream.
@@ -66,7 +66,7 @@ export interface TTSProvider {
  *
  * @example
  * ```ts
- * const bridge = call.agent();
+ * const bridge = call.agent;
  * bridge.ear(mySTT);
  * bridge.mouth(myTTS);
  *
@@ -96,22 +96,7 @@ export interface AgentBridge {
   say(text: string, options?: TTSOptions): Promise<void>;
 
   /**
-   * Inject a pre-encoded audio stream directly into the call.
-   *
-   * @param stream - Audio stream to inject.
-   */
-  play(stream: MediaSource): Promise<void>;
-
-  /**
-   * Inject a synthetic video stream (e.g. an avatar) into the call.
-   * Only available when the call has an active `"video"` media stream.
-   *
-   * @param stream - Video stream to inject.
-   */
-  show?(stream: MediaSource): Promise<void>;
-
-  /**
-   * Get the current STT provider (no args) or set it (with arg).
+   * Get the current STT provider
    *
    * - `bridge.ear()` — returns current {@link STTProvider} or `undefined`
    * - `bridge.ear(p)` — sets the provider; affects subsequent {@link AgentBridge.onHeard} callbacks
@@ -145,4 +130,13 @@ export interface AgentBridge {
    * @param callback - Receives the description and the source timestamp.
    */
   onSeen(callback: (description: string, timestamp: number) => void): void;
+
+  /**
+   * Register a callback for incoming text messages on the call.
+   *
+   * Auto-wired from `call.onText` — no provider needed.
+   *
+   * @param callback - Invoked for each received {@link CallTextMessage}.
+   */
+  onRead(callback: (msg: CallTextMessage) => void): void;
 }

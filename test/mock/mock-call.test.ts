@@ -188,13 +188,13 @@ describe("MockCall text channel", () => {
 describe("MockCall agent bridge", () => {
   it("agent returns the same instance each call", () => {
     const call = makeCall();
-    expect(call.agent()).toBe(call.agent());
+    expect(call.agent).toBe(call.agent);
   });
 
   it("_triggerVoiceInput fires onHeard callbacks via bridge", () => {
     const call = makeCall();
     const transcripts: string[] = [];
-    call.agent().onHeard((t) => transcripts.push(t));
+    call.agent.onHeard((t) => transcripts.push(t));
 
     call._triggerVoiceInput("hello there", 0.95);
 

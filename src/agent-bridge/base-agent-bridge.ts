@@ -5,7 +5,7 @@ import type {
   VisionProvider,
 } from "../interfaces/agent-bridge.js";
 import type { Call } from "../interfaces/call.js";
-import type { MediaSource, TTSOptions } from "../types.js";
+import type { CallTextMessage, TTSOptions } from "../types.js";
 
 /**
  * Concrete implementation of {@link AgentBridge} that wires pluggable
@@ -34,13 +34,18 @@ export class BaseAgentBridge implements AgentBridge {
     (transcript: string, confidence: number, metadata?: unknown) => void
   > = [];
   private readonly _seenCallbacks: Array<(description: string, timestamp: number) => void> = [];
+  private readonly _readCallbacks: Array<(msg: CallTextMessage) => void> = [];
 
   /**
    * @param call - The call this bridge is attached to.
-   *   Used by {@link BaseAgentBridge.play} and
-   *   {@link BaseAgentBridge.say} to deliver synthesised media.
+   *   Used by {@link BaseAgentBridge.say} to deliver synthesised media.
    */
-  constructor(private readonly call: Call) {}
+  constructor(private readonly call: Call) {
+    // Auto-wire incoming text messages to onRead subscribers.
+    call.onText((msg) => {
+      for (const cb of this._readCallbacks) cb(msg);
+    });
+  }
 
   /** @inheritdoc */
   onHeard(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void {
@@ -52,16 +57,6 @@ export class BaseAgentBridge implements AgentBridge {
     if (!this._ttsProvider) return;
     const stream = this._ttsProvider.synthesize(text, options);
     await this.call.send(stream, "audio");
-  }
-
-  /** @inheritdoc */
-  async play(stream: MediaSource): Promise<void> {
-    await this.call.send(stream, "audio");
-  }
-
-  /** @inheritdoc */
-  async show(stream: MediaSource): Promise<void> {
-    await this.call.send(stream, "video");
   }
 
   ear(): STTProvider | undefined;
@@ -89,6 +84,10 @@ export class BaseAgentBridge implements AgentBridge {
 
   onSeen(callback: (description: string, timestamp: number) => void): void {
     this._seenCallbacks.push(callback);
+  }
+
+  onRead(callback: (msg: CallTextMessage) => void): void {
+    this._readCallbacks.push(callback);
   }
 
   /** @internal — called by the vision pipeline once implemented. */

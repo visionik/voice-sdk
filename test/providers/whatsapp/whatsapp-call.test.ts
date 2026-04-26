@@ -279,6 +279,6 @@ describe("WhatsAppCall text channel", () => {
 describe("WhatsAppCall agent bridge", () => {
   it("agent returns the same instance", () => {
     const { call } = makeCall();
-    expect(call.agent()).toBe(call.agent());
+    expect(call.agent).toBe(call.agent);
   });
 });

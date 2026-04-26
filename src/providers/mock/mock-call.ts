@@ -163,7 +163,7 @@ export class MockCall extends EventEmitter implements Call {
   // Call interface — agent bridge
   // -------------------------------------------------------------------------
 
-  agent(): AgentBridge {
+  get agent(): AgentBridge {
     return this._bridge;
   }
 

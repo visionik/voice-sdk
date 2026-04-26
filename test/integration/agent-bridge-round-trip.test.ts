@@ -49,7 +49,7 @@ describe("AgentBridge onHeard", () => {
     const call = provider.ring(ENDPOINT);
 
     const captured: Array<{ t: string; c: number }> = [];
-    call.agent().onHeard((t, c) => captured.push({ t, c }));
+    call.agent.onHeard((t, c) => captured.push({ t, c }));
 
     provider.speak(call.id, "what time is it", 0.88);
 
@@ -59,7 +59,7 @@ describe("AgentBridge onHeard", () => {
   it("multiple callbacks all fire", () => {
     const provider = new MockVoiceProvider();
     const call = provider.ring(ENDPOINT);
-    const bridge = call.agent();
+    const bridge = call.agent;
 
     const results: string[] = [];
     bridge.onHeard((t) => results.push(`a:${t}`));
@@ -82,9 +82,9 @@ describe("AgentBridge say", () => {
     await call.accept();
 
     const { provider: tts, synthesizeSpy } = makeTTS();
-    call.agent().mouth(tts);
+    call.agent.mouth(tts);
 
-    await call.agent().say("Hello, caller");
+    await call.agent.say("Hello, caller");
 
     expect(synthesizeSpy).toHaveBeenCalledWith("Hello, caller", undefined);
 
@@ -100,7 +100,7 @@ describe("AgentBridge say", () => {
     await call.accept();
 
     // No TTS provider set — should not throw
-    await expect(call.agent().say("hello")).resolves.toBeUndefined();
+    await expect(call.agent.say("hello")).resolves.toBeUndefined();
     expect(call.sent()).toHaveLength(0);
   });
 
@@ -110,21 +110,21 @@ describe("AgentBridge say", () => {
     await call.accept();
 
     const { provider: tts, synthesizeSpy } = makeTTS();
-    call.agent().mouth(tts);
+    call.agent.mouth(tts);
 
     const opts: TTSOptions = { voice: "en-US", speed: 1.2 };
-    await call.agent().say("speak", opts);
+    await call.agent.say("speak", opts);
 
     expect(synthesizeSpy).toHaveBeenCalledWith("speak", opts);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Round-trip: play → send
+// Raw audio inject via call.send (play moved off bridge)
 // ---------------------------------------------------------------------------
 
-describe("AgentBridge play", () => {
-  it("sends the audio stream directly as media", async () => {
+describe("call.send raw audio", () => {
+  it("sends raw audio directly without the bridge", async () => {
     const provider = new MockVoiceProvider();
     const call = provider.ring(ENDPOINT);
     await call.accept();
@@ -133,7 +133,7 @@ describe("AgentBridge play", () => {
       yield Buffer.from("raw-audio-chunk");
     }
 
-    await call.agent().play(rawAudio());
+    await call.send(rawAudio(), "audio");
 
     const sent = call.sent();
     expect(sent).toHaveLength(1);
@@ -152,7 +152,7 @@ describe("Full agent round-trip", () => {
     const call = provider.ring(ENDPOINT);
     await call.accept();
 
-    const bridge = call.agent();
+    const bridge = call.agent;
     const { provider: tts } = makeTTS("response");
     bridge.mouth(tts);
 
@@ -186,7 +186,7 @@ describe("AgentBridge STT provider", () => {
   it("ear can be changed at runtime", () => {
     const provider = new MockVoiceProvider();
     const call = provider.ring(ENDPOINT);
-    const bridge = call.agent();
+    const bridge = call.agent;
 
     const { provider: stt1 } = makeSTT();
     const { provider: stt2 } = makeSTT();

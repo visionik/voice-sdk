@@ -30,7 +30,7 @@ import type {
  *
  * await call.accept({ mediaTypes: ['audio'] });
  *
- * const agent = call.agent();
+ * const agent = call.agent;
  * agent.onHeard((transcript) => {
  *   void agent.say('You said: ' + transcript);
  * });
@@ -139,10 +139,10 @@ export interface Call extends EventEmitter {
   // -------------------------------------------------------------------------
 
   /**
-   * Get the {@link AgentBridge} attached to this call.
+   * The {@link AgentBridge} attached to this call.
    * Each call has exactly one bridge instance for its lifetime.
    */
-  agent(): AgentBridge;
+  readonly agent: AgentBridge;
 
   // -------------------------------------------------------------------------
   // Events (typed EventEmitter overloads)

@@ -165,7 +165,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
   // Agent bridge
   // -------------------------------------------------------------------------
 
-  agent(): AgentBridge {
+  get agent(): AgentBridge {
     return this._bridge;
   }
 

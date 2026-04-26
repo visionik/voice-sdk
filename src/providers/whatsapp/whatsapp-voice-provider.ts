@@ -20,8 +20,8 @@ export type WhatsAppIncomingCallHandler = (call: Call) => void;
  *
  * provider.onCall(async (call) => {
  *   await call.accept();
- *   call.agent().onHeard((transcript) => {
- *     void call.agent().say(`You said: ${transcript}`);
+ *   call.agent.onHeard((transcript) => {
+ *     void call.agent.say(`You said: ${transcript}`);
  *   });
  * });
  * ```

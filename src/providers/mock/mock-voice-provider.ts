@@ -22,7 +22,7 @@ export type IncomingCallHandler = (call: Call) => void;
  * const provider = new MockVoiceProvider();
  * provider.onCall(async (call) => {
  *   await call.accept();
- *   call.agent().onHeard((t) => console.log('heard:', t));
+ *   call.agent.onHeard((t) => console.log('heard:', t));
  * });
  *
  * const call = provider.ring({ type: 'whatsapp', id: '+1234' });
