@@ -1,6 +1,6 @@
 import type { Call } from "../../interfaces/call.js";
 import type { VoiceProvider } from "../../interfaces/voice-provider.js";
-import type { CallOptions, CallState, Endpoint, MediaType } from "../../types.js";
+import type { CallOptions, CallState, Endpoint, MediaType, Participant } from "../../types.js";
 import { MockCall } from "./mock-call.js";
 
 /** Callback invoked when an incoming call arrives. */
@@ -46,7 +46,7 @@ export class MockVoiceProvider implements VoiceProvider {
 
   /** @inheritdoc */
   async dial(endpoint: Endpoint, options?: CallOptions): Promise<Call> {
-    const call = this._makeCall(endpoint, options);
+    const call = this._makeCall(endpoint, options, "outbound");
     call._transitionState("ringing");
     return call;
   }
@@ -54,7 +54,7 @@ export class MockVoiceProvider implements VoiceProvider {
   /** @inheritdoc */
   async join(groupId: string, options?: CallOptions): Promise<Call> {
     const endpoint: Endpoint = { type: "whatsapp", id: groupId };
-    const call = this._makeCall(endpoint, options);
+    const call = this._makeCall(endpoint, options, "outbound");
     call._transitionState("connecting");
     return call;
   }
@@ -87,7 +87,7 @@ export class MockVoiceProvider implements VoiceProvider {
    *   can access test helpers (`_triggerVoiceInput`, `sent`, etc.).
    */
   ring(endpoint: Endpoint, options?: CallOptions): MockCall {
-    const call = this._makeCall(endpoint, options);
+    const call = this._makeCall(endpoint, options, "inbound");
     call._transitionState("ringing");
     for (const handler of this._onCallHandlers) {
       handler(call);
@@ -123,13 +123,32 @@ export class MockVoiceProvider implements VoiceProvider {
     call._triggerVoiceInput(transcript, confidence);
   }
 
+  /** Simulate a participant joining — adds to list and fires `onJoin`. */
+  triggerJoin(callId: string, participant: Participant): void {
+    this._requireCall(callId)._addParticipant(participant);
+  }
+
+  /** Simulate a participant leaving — removes by id and fires `onLeave`. */
+  triggerLeave(callId: string, participantId: string, reason?: string): void {
+    this._requireCall(callId)._removeParticipant(participantId, reason);
+  }
+
+  /** Simulate the active speaker changing — fires `onSpeaking`. */
+  triggerSpeaking(callId: string, participantId: string, isSpeaking: boolean): void {
+    this._requireCall(callId)._notifySpeaking(participantId, isSpeaking);
+  }
+
   // -------------------------------------------------------------------------
   // Private
   // -------------------------------------------------------------------------
 
-  private _makeCall(endpoint: Endpoint, options?: CallOptions): MockCall {
+  private _makeCall(
+    endpoint: Endpoint,
+    options?: CallOptions,
+    direction: "inbound" | "outbound" = "inbound",
+  ): MockCall {
     const id = `mock-call-${(++this._callCounter).toString()}`;
-    const call = new MockCall(id, endpoint, options);
+    const call = new MockCall(id, endpoint, options, direction);
     this._calls.set(id, call);
     return call;
   }

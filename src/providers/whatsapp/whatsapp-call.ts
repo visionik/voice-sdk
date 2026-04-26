@@ -4,12 +4,15 @@ import { CallError } from "../../errors.js";
 import type { AgentBridge } from "../../interfaces/agent-bridge.js";
 import type { Call } from "../../interfaces/call.js";
 import type {
+  CallDirection,
   CallMode,
   CallState,
   CallTextMessage,
+  DtmfTone,
   Endpoint,
   MediaSource,
   MediaType,
+  Participant,
 } from "../../types.js";
 import type { WhatsAppCallEvent } from "./connection-manager.js";
 import type { WhatsAppConnectionManager } from "./connection-manager.js";
@@ -32,16 +35,25 @@ export class WhatsAppCall extends EventEmitter implements Call {
 
   private _state: CallState = "ringing";
   private _mode: CallMode = "full-duplex";
+  private readonly _direction: CallDirection;
+  private _connectedAt?: number;
   private readonly _activeMedia = new Set<MediaType>();
+  private readonly _mutedChannels = new Set<MediaType>();
   private readonly _bridge: BaseAgentBridge;
   private readonly _mediaQueues = new Map<MediaType, MediaStreamQueue>();
   private readonly _manager: WhatsAppConnectionManager;
+  private readonly _dtmfCallbacks: Array<(t: DtmfTone) => void> = [];
 
-  constructor(event: WhatsAppCallEvent, manager: WhatsAppConnectionManager) {
+  constructor(
+    event: WhatsAppCallEvent,
+    manager: WhatsAppConnectionManager,
+    direction: CallDirection = "inbound",
+  ) {
     super();
     this.id = event.callId;
     this._manager = manager;
     this.endpoint = { type: "whatsapp", id: event.from };
+    this._direction = direction;
     this._bridge = new BaseAgentBridge(this);
 
     // Wire inbound audio from the manager into the media queue.
@@ -58,6 +70,20 @@ export class WhatsAppCall extends EventEmitter implements Call {
 
   get state(): CallState {
     return this._state;
+  }
+
+  get direction(): CallDirection {
+    return this._direction;
+  }
+
+  get duration(): number {
+    if (!this._connectedAt || this._state === "ended" || this._state === "failed") return 0;
+    return Date.now() - this._connectedAt;
+  }
+
+  get participants(): ReadonlyArray<Participant> {
+    // Participant awareness is provider-specific — not yet wired for WhatsApp.
+    return [];
   }
 
   // -------------------------------------------------------------------------
@@ -86,8 +112,58 @@ export class WhatsAppCall extends EventEmitter implements Call {
       this.emit("media", m, true);
     }
 
+    this._connectedAt = Date.now();
     this._transitionState("connected");
   }
+
+  async hold(): Promise<void> {
+    if (this._state !== "connected") {
+      return Promise.reject(
+        CallError.unauthorized(`Cannot hold: call is in state "${this._state}"`),
+      );
+    }
+    this._transitionState("held");
+  }
+
+  async resume(): Promise<void> {
+    if (this._state !== "held") {
+      return Promise.reject(
+        CallError.unauthorized(`Cannot resume: call is in state "${this._state}"`),
+      );
+    }
+    this._transitionState("connected");
+  }
+
+  async mute(type: MediaType): Promise<void> {
+    this._mutedChannels.add(type);
+  }
+
+  async unmute(type: MediaType): Promise<void> {
+    this._mutedChannels.delete(type);
+  }
+
+  muted(): ReadonlySet<MediaType> {
+    return this._mutedChannels;
+  }
+
+  async transfer(_endpoint: Endpoint): Promise<void> {
+    // TODO: implement via manager.transfer() when added to WhatsAppConnectionManager.
+  }
+
+  async dtmf(tone: DtmfTone): Promise<void> {
+    // TODO: implement via manager.sendDTMF() when added to WhatsAppConnectionManager.
+    void tone;
+  }
+
+  onDTMF(callback: (tone: DtmfTone) => void): void {
+    this._dtmfCallbacks.push(callback);
+  }
+
+  onJoin(_callback: (p: Participant) => void): void {}
+  onLeave(_callback: (p: Participant, reason?: string) => void): void {}
+  onSpeaking(_callback: (p: Participant, isSpeaking: boolean) => void): void {}
+  async raise(): Promise<void> {}
+  async lower(): Promise<void> {}
 
   async reject(reason?: string): Promise<void> {
     await this._manager.reject(this.id, reason);
@@ -95,6 +171,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
   }
 
   async hangup(_reason?: string): Promise<void> {
+    this._connectedAt = undefined;
     await this._manager.end(this.id);
     this._transitionState("ended");
   }

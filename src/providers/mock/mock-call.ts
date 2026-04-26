@@ -4,13 +4,16 @@ import { CallError } from "../../errors.js";
 import type { AgentBridge } from "../../interfaces/agent-bridge.js";
 import type { Call } from "../../interfaces/call.js";
 import type {
+  CallDirection,
   CallMode,
   CallOptions,
   CallState,
   CallTextMessage,
+  DtmfTone,
   Endpoint,
   MediaSource,
   MediaType,
+  Participant,
 } from "../../types.js";
 
 /**
@@ -46,15 +49,30 @@ export class MockCall extends EventEmitter implements Call {
 
   private _state: CallState = "initialized";
   private _mode: CallMode;
+  private readonly _direction: CallDirection;
+  private _connectedAt?: number;
   private readonly _activeMedia = new Set<MediaType>();
+  private readonly _mutedChannels = new Set<MediaType>();
   private readonly _bridge: BaseAgentBridge;
   private readonly _sentMedia: SentMediaEntry[] = [];
+  private readonly _sentDTMF: DtmfTone[] = [];
+  private readonly _dtmfCallbacks: Array<(tone: DtmfTone) => void> = [];
+  private readonly _participants: Participant[] = [];
+  private readonly _joinCallbacks: Array<(p: Participant) => void> = [];
+  private readonly _leaveCallbacks: Array<(p: Participant, reason?: string) => void> = [];
+  private readonly _speakingCallbacks: Array<(p: Participant, isSpeaking: boolean) => void> = [];
 
-  constructor(id: string, endpoint: Endpoint, options?: CallOptions) {
+  constructor(
+    id: string,
+    endpoint: Endpoint,
+    options?: CallOptions,
+    direction: CallDirection = "inbound",
+  ) {
     super();
     this.id = id;
     this.endpoint = endpoint;
     this._mode = options?.mode ?? "full-duplex";
+    this._direction = direction;
     this._bridge = new BaseAgentBridge(this);
   }
 
@@ -64,6 +82,19 @@ export class MockCall extends EventEmitter implements Call {
 
   get state(): CallState {
     return this._state;
+  }
+
+  get direction(): CallDirection {
+    return this._direction;
+  }
+
+  get duration(): number {
+    if (!this._connectedAt || this._state === "ended" || this._state === "failed") return 0;
+    return Date.now() - this._connectedAt;
+  }
+
+  get participants(): ReadonlyArray<Participant> {
+    return this._participants;
   }
 
   // -------------------------------------------------------------------------
@@ -79,6 +110,7 @@ export class MockCall extends EventEmitter implements Call {
     for (const m of media) {
       this._activeMedia.add(m);
     }
+    this._connectedAt = Date.now();
     this._transitionState("connected");
     for (const m of this._activeMedia) {
       this.emit("media", m, true);
@@ -90,8 +122,67 @@ export class MockCall extends EventEmitter implements Call {
   }
 
   async hangup(_reason?: string): Promise<void> {
+    this._connectedAt = undefined;
     this._transitionState("ended");
   }
+
+  async hold(): Promise<void> {
+    if (this._state !== "connected") {
+      return Promise.reject(
+        CallError.unauthorized(`Cannot hold: call is in state "${this._state}"`),
+      );
+    }
+    this._transitionState("held");
+  }
+
+  async resume(): Promise<void> {
+    if (this._state !== "held") {
+      return Promise.reject(
+        CallError.unauthorized(`Cannot resume: call is in state "${this._state}"`),
+      );
+    }
+    this._transitionState("connected");
+  }
+
+  async mute(type: MediaType): Promise<void> {
+    this._mutedChannels.add(type);
+  }
+
+  async unmute(type: MediaType): Promise<void> {
+    this._mutedChannels.delete(type);
+  }
+
+  muted(): ReadonlySet<MediaType> {
+    return this._mutedChannels;
+  }
+
+  async transfer(_endpoint: Endpoint): Promise<void> {
+    // Mock: no-op. Real providers route via the connection manager.
+  }
+
+  async dtmf(tone: DtmfTone): Promise<void> {
+    this._sentDTMF.push(tone);
+  }
+
+  onDTMF(callback: (tone: DtmfTone) => void): void {
+    this._dtmfCallbacks.push(callback);
+  }
+
+  onJoin(callback: (p: Participant) => void): void {
+    this._joinCallbacks.push(callback);
+  }
+
+  onLeave(callback: (p: Participant, reason?: string) => void): void {
+    this._leaveCallbacks.push(callback);
+  }
+
+  onSpeaking(callback: (p: Participant, isSpeaking: boolean) => void): void {
+    this._speakingCallbacks.push(callback);
+  }
+
+  async raise(): Promise<void> {}
+
+  async lower(): Promise<void> {}
 
   mode(): CallMode;
   mode(newMode: CallMode): Promise<void>;
@@ -232,5 +323,38 @@ export class MockCall extends EventEmitter implements Call {
    */
   sent(): ReadonlyArray<SentMediaEntry> {
     return this._sentMedia;
+  }
+
+  /** Return all DTMF tones sent via {@link MockCall.dtmf}. @internal */
+  sentDTMF(): ReadonlyArray<DtmfTone> {
+    return this._sentDTMF;
+  }
+
+  /** Simulate receiving a DTMF tone — fires onDTMF callbacks. @internal */
+  _simulateDTMF(tone: DtmfTone): void {
+    for (const cb of this._dtmfCallbacks) cb(tone);
+  }
+
+  /** Add a participant and fire onJoin callbacks. @internal */
+  _addParticipant(participant: Participant): void {
+    this._participants.push(participant);
+    for (const cb of this._joinCallbacks) cb(participant);
+  }
+
+  /** Remove participant by id and fire onLeave callbacks. @internal */
+  _removeParticipant(id: string, reason?: string): void {
+    const idx = this._participants.findIndex((p) => p.id === id);
+    if (idx === -1) return;
+    const [removed] = this._participants.splice(idx, 1);
+    if (removed) {
+      for (const cb of this._leaveCallbacks) cb(removed, reason);
+    }
+  }
+
+  /** Fire onSpeaking callbacks for a participant. @internal */
+  _notifySpeaking(id: string, isSpeaking: boolean): void {
+    const participant = this._participants.find((p) => p.id === id);
+    if (!participant) return;
+    for (const cb of this._speakingCallbacks) cb(participant, isSpeaking);
   }
 }

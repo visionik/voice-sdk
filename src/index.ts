@@ -4,14 +4,17 @@
 
 // Types
 export type {
+  CallDirection,
   CallMode,
   CallOptions,
   CallState,
   CallTextMessage,
+  DtmfTone,
   Endpoint,
   EndpointType,
   MediaSource,
   MediaType,
+  Participant,
   RetryPolicy,
   TTSOptions,
 } from "./types.js";

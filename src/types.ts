@@ -100,6 +100,49 @@ export type TTSOptions = {
 };
 
 /**
+ * DTMF (Dual-Tone Multi-Frequency) tone — standard telephone keypad.
+ */
+export type DtmfTone =
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9"
+  | "*"
+  | "#"
+  | "A"
+  | "B"
+  | "C"
+  | "D";
+
+/**
+ * Whether a call was received (inbound) or initiated (outbound).
+ */
+export type CallDirection = "inbound" | "outbound";
+
+/**
+ * A participant in a multi-party call or meeting.
+ * Does not include the local party (the agent itself).
+ */
+export type Participant = {
+  /** Stable identifier for this participant within the call. */
+  id: string;
+  /** Optional display name. */
+  name?: string;
+  /** The participant's endpoint (transport + address). */
+  endpoint: Endpoint;
+  /** Whether the participant's microphone is currently muted. */
+  muted: boolean;
+  /** Whether the participant has an active video channel. */
+  hasVideo: boolean;
+};
+
+/**
  * Options provided when creating or joining a call.
  */
 export type CallOptions = {

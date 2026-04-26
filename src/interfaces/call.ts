@@ -1,12 +1,15 @@
 import type { EventEmitter } from "node:events";
 import type { AgentBridge } from "./agent-bridge.js";
 import type {
+  CallDirection,
   CallMode,
   CallState,
   CallTextMessage,
+  DtmfTone,
   Endpoint,
   MediaSource,
   MediaType,
+  Participant,
 } from "../types.js";
 
 /**
@@ -49,6 +52,12 @@ export interface Call extends EventEmitter {
   /** Current lifecycle state. */
   readonly state: CallState;
 
+  /** Whether the call was received (`'inbound'`) or initiated (`'outbound'`). */
+  readonly direction: CallDirection;
+
+  /** Elapsed milliseconds since the call was connected. `0` if not yet connected or after ended. */
+  readonly duration: number;
+
   // -------------------------------------------------------------------------
   // Control
   // -------------------------------------------------------------------------
@@ -75,6 +84,46 @@ export interface Call extends EventEmitter {
    * @param reason - Optional human-readable hang-up reason.
    */
   hangup(reason?: string): Promise<void>;
+
+  /**
+   * Put the call on hold. Transitions `connected` → `held`.
+   * @throws {@link CallError} `"unauthorized"` if not in `connected` state.
+   */
+  hold(): Promise<void>;
+
+  /**
+   * Resume a held call. Transitions `held` → `connected`.
+   * @throws {@link CallError} `"unauthorized"` if not in `held` state.
+   */
+  resume(): Promise<void>;
+
+  /**
+   * Silence a specific media channel without deactivating it.
+   * The channel remains established; the local source is simply muted.
+   */
+  mute(type: MediaType): Promise<void>;
+
+  /** Restore a previously muted channel. No-op if the channel is not muted. */
+  unmute(type: MediaType): Promise<void>;
+
+  /** Return the set of currently muted media types. */
+  muted(): ReadonlySet<MediaType>;
+
+  /**
+   * Blind-transfer this call to `endpoint`.
+   * The local leg ends and the remote party is connected to the target.
+   */
+  transfer(endpoint: Endpoint): Promise<void>;
+
+  /**
+   * Send a DTMF tone to the remote party (e.g. to navigate an IVR).
+   */
+  dtmf(tone: DtmfTone): Promise<void>;
+
+  /**
+   * Register a callback for incoming DTMF tones from the remote party.
+   */
+  onDTMF(callback: (tone: DtmfTone) => void): void;
 
   /**
    * Get the current participation mode (no args) or set it (with arg).
@@ -152,6 +201,32 @@ export interface Call extends EventEmitter {
    * @param callback - Called with a fresh `MediaSource` when video is active.
    */
   onVideo(callback: (stream: MediaSource) => void): void;
+
+  // -------------------------------------------------------------------------
+  // Participants (group calls / meetings)
+  // -------------------------------------------------------------------------
+
+  /** Current list of remote participants. Does not include the local agent. */
+  readonly participants: ReadonlyArray<Participant>;
+
+  /** Fires when a participant joins the call. */
+  onJoin(callback: (participant: Participant) => void): void;
+
+  /** Fires when a participant leaves the call. */
+  onLeave(callback: (participant: Participant, reason?: string) => void): void;
+
+  /**
+   * Fires when the active speaker changes.
+   * `isSpeaking: true` — participant started speaking.
+   * `isSpeaking: false` — participant stopped speaking.
+   */
+  onSpeaking(callback: (participant: Participant, isSpeaking: boolean) => void): void;
+
+  /** Signal intent to speak (raise hand) in a group call. */
+  raise(): Promise<void>;
+
+  /** Lower a raised hand. */
+  lower(): Promise<void>;
 
   // -------------------------------------------------------------------------
   // Agent bridge
