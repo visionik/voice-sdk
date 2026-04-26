@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "CLI Harness",
-    "status": "active",
+    "status": "completed",
     "narrative": {
       "Summary": "Implement the openclaw-voice CLI tool: a developer harness for manually testing call scenarios from the terminal. Uses MockVoiceProvider to simulate incoming/outgoing calls, displays call state transitions, captures audio stream output, and allows interactive text injection. Exposed as the bin entry in package.json.",
       "Traces": "FR-9 (CLI harness for interactive call testing)",
@@ -18,25 +18,25 @@
       {
         "id": "cli-1",
         "title": "cli/index.ts — CLI entry and command registration",
-        "status": "active",
+        "status": "completed",
         "narrative": "Commander-based CLI. Commands: simulate-incoming (trigger incoming call via MockProvider), dial (outbound call), inspect (print call state), version. Mirror openclaw's commander patterns."
       },
       {
         "id": "cli-2",
         "title": "cli/commands/simulate-incoming.ts — simulate-incoming command",
-        "status": "active",
+        "status": "completed",
         "narrative": "Options: --from <endpoint> (default whatsapp:+15550001234), --media <types> (comma-separated, default audio), --mode <mode> (default talkback), --auto-accept. Creates MockVoiceProvider, triggers incoming call, auto-accepts if flag set, prints state transitions to stdout, exits on call end."
       },
       {
         "id": "cli-3",
         "title": "cli/commands/dial.ts — dial command",
-        "status": "active",
+        "status": "completed",
         "narrative": "Options: --to <endpoint>, --provider mock (only mock supported in CLI for now), --media, --mode. Creates outbound call via MockProvider, prints state transitions."
       },
       {
         "id": "cli-4",
         "title": "test/cli/cli.test.ts — CLI smoke tests",
-        "status": "active",
+        "status": "completed",
         "narrative": "Test simulate-incoming --auto-accept runs to completion without error. Test --help output contains expected command names. Test version outputs correct package version."
       }
     ]
