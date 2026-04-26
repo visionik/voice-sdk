@@ -82,7 +82,7 @@ describe("AgentBridge say", () => {
     await call.accept();
 
     const { provider: tts, synthesizeSpy } = makeTTS();
-    call.agent().setTTS(tts);
+    call.agent().mouth(tts);
 
     await call.agent().say("Hello, caller");
 
@@ -110,7 +110,7 @@ describe("AgentBridge say", () => {
     await call.accept();
 
     const { provider: tts, synthesizeSpy } = makeTTS();
-    call.agent().setTTS(tts);
+    call.agent().mouth(tts);
 
     const opts: TTSOptions = { voice: "en-US", speed: 1.2 };
     await call.agent().say("speak", opts);
@@ -154,7 +154,7 @@ describe("Full agent round-trip", () => {
 
     const bridge = call.agent();
     const { provider: tts } = makeTTS("response");
-    bridge.setTTS(tts);
+    bridge.mouth(tts);
 
     // Simulate the agent pattern: react to voice, inject TTS response
     const agentReplied: string[] = [];
@@ -183,7 +183,7 @@ describe("Full agent round-trip", () => {
 // ---------------------------------------------------------------------------
 
 describe("AgentBridge STT provider", () => {
-  it("setSTT can be changed at runtime", () => {
+  it("ear can be changed at runtime", () => {
     const provider = new MockVoiceProvider();
     const call = provider.ring(ENDPOINT);
     const bridge = call.agent();
@@ -191,8 +191,8 @@ describe("AgentBridge STT provider", () => {
     const { provider: stt1 } = makeSTT();
     const { provider: stt2 } = makeSTT();
 
-    bridge.setSTT(stt1);
-    bridge.setSTT(stt2); // replace
+    bridge.ear(stt1);
+    bridge.ear(stt2); // replace
 
     // Just verify no error — the provider is stored
     // Actual transcription is exercised by WhatsApp provider tests

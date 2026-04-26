@@ -65,13 +65,17 @@ export class BaseAgentBridge implements AgentBridge {
     await this.call.send(stream, "video");
   }
 
-  /** @inheritdoc */
-  setSTT(provider: STTProvider): void {
+  ear(): STTProvider | undefined;
+  ear(provider: STTProvider): void;
+  ear(provider?: STTProvider): STTProvider | undefined | void {
+    if (provider === undefined) return this._sttProvider;
     this._sttProvider = provider;
   }
 
-  /** @inheritdoc */
-  setTTS(provider: TTSProvider): void {
+  mouth(): TTSProvider | undefined;
+  mouth(provider: TTSProvider): void;
+  mouth(provider?: TTSProvider): TTSProvider | undefined | void {
+    if (provider === undefined) return this._ttsProvider;
     this._ttsProvider = provider;
   }
 

@@ -153,8 +153,8 @@ const _bridge: AgentBridge = {
   onTranscript: (_cb: (t: string, c: number) => void): void => {},
   say: async (_text: string): Promise<void> => {},
   play: async (_s: MediaSource): Promise<void> => {},
-  setSTT: (_p: STTProvider): void => {},
-  setTTS: (_p: TTSProvider): void => {},
+  ear: (_p: STTProvider): void => {},
+  mouth: (_p: TTSProvider): void => {},
 };
 void _bridge;
 

@@ -43,13 +43,13 @@ export interface TTSProvider {
  * - inject raw audio or synthetic video streams directly
  *
  * STT and TTS providers are pluggable at runtime via
- * {@link AgentBridge.setSTT} and {@link AgentBridge.setTTS}.
+ * {@link AgentBridge.ear} and {@link AgentBridge.mouth}.
  *
  * @example
  * ```ts
  * const bridge = call.agent();
- * bridge.setSTT(mySTT);
- * bridge.setTTS(myTTS);
+ * bridge.ear(mySTT);
+ * bridge.mouth(myTTS);
  *
  * bridge.onTranscript((transcript) => {
  *   // Send to LLM, then reply:
@@ -62,7 +62,7 @@ export interface AgentBridge {
    * Register a callback that fires whenever a voice transcript is ready.
    *
    * Requires an {@link STTProvider} to have been set via
-   * {@link AgentBridge.setSTT}.
+   * {@link AgentBridge.ear}.
    *
    * @param callback - Receives the transcript, confidence score, and optional metadata.
    */
@@ -102,18 +102,20 @@ export interface AgentBridge {
   show?(stream: MediaSource): Promise<void>;
 
   /**
-   * Replace the active STT provider.
-   * Affects all subsequent calls to {@link AgentBridge.onTranscript}.
+   * Get the current STT provider (no args) or set it (with arg).
    *
-   * @param provider - The new STT provider.
+   * - `bridge.ear()` — returns current {@link STTProvider} or `undefined`
+   * - `bridge.ear(p)` — sets the provider; affects subsequent {@link AgentBridge.onTranscript} callbacks
    */
-  setSTT(provider: STTProvider): void;
+  ear(): STTProvider | undefined;
+  ear(provider: STTProvider): void;
 
   /**
-   * Replace the active TTS provider.
-   * Affects all subsequent calls to {@link AgentBridge.say}.
+   * Get the current TTS provider (no args) or set it (with arg).
    *
-   * @param provider - The new TTS provider.
+   * - `bridge.mouth()` — returns current {@link TTSProvider} or `undefined`
+   * - `bridge.mouth(p)` — sets the provider; affects subsequent {@link AgentBridge.say} calls
    */
-  setTTS(provider: TTSProvider): void;
+  mouth(): TTSProvider | undefined;
+  mouth(provider: TTSProvider): void;
 }
