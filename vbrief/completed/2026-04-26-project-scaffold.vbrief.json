@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "Project Scaffold",
-    "status": "active",
+    "status": "completed",
     "narrative": {
       "Summary": "Initialize the openclaw-voice-sdk repository with the full toolchain: pnpm workspace, TypeScript 6, tsdown build, vitest test framework, oxlint linter, Taskfile. Includes package.json for @openclaw/voice-sdk, tsconfig.json, tsdown.config.ts, vitest.config.ts, oxlint.json, Taskfile.yml with check/test/build/lint/fmt/release tasks, .gitignore, CHANGELOG.md, and README stub. This scope has no source code — it is the foundation all subsequent scopes depend on.",
       "Traces": "NFR-2 (Node.js 22+), NFR-3 (ESM-only tsdown), NFR-5 (Conventional Commits), NFR-6 (npm publish config)",
