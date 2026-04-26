@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "Core Types and Interfaces",
-    "status": "proposed",
+    "status": "active",
     "narrative": {
       "Summary": "Implement all core TypeScript types, interfaces, and the CallError class. This scope defines the complete public contract of the SDK: VoiceProvider, Call, AgentBridge, STTProvider, TTSProvider, MediaService, and all supporting types. No implementation logic — pure interfaces and types. This is the contract that all subsequent scopes (providers, agents) program against.",
       "Traces": "FR-1 (VoiceProvider), FR-2 (Call), FR-3 (MediaSource), FR-4 (CallOptions/RetryPolicy), FR-5 (AgentBridge), FR-8 (CallError), FR-10 (text channel), NFR-2 (no DOM)",
@@ -18,49 +18,49 @@
       {
         "id": "types-1",
         "title": "src/types.ts — primitive unions and value types",
-        "status": "proposed",
+        "status": "active",
         "narrative": "MediaType = 'audio' | 'video' | 'screen' | 'data'. CallState = 'initialized' | 'ringing' | 'connecting' | 'connected' | 'held' | 'ended' | 'failed'. CallMode = 'listen-only' | 'talkback' | 'full-duplex'. EndpointType = 'whatsapp' | 'phone' | 'discord' | 'sip' | 'webrtc'. MediaSource = AsyncIterable<Buffer>. RetryPolicy = { maxAttempts: number; backoffMs: number; }. Endpoint = { type, id, metadata? }. CallTextMessage = { id, text, from, timestamp, mentions? }. TTSOptions = { voice?, speed?, language? }."
       },
       {
         "id": "types-2",
         "title": "src/interfaces/voice-provider.ts — VoiceProvider interface",
-        "status": "proposed",
+        "status": "active",
         "narrative": "FR-1. VoiceProvider: { readonly name: string; readonly supportedMedia: readonly MediaType[]; createCall(endpoint, options?): Promise<Call>; joinGroupCall(groupId, options?): Promise<Call>; setConnectionManager?(manager: unknown): void; }. The setConnectionManager is optional to allow non-socket providers. Typed with Call imported from call.ts."
       },
       {
         "id": "types-3",
         "title": "src/interfaces/call.ts — Call interface",
-        "status": "proposed",
+        "status": "active",
         "narrative": "FR-2, FR-3, FR-5, FR-10. Call extends EventEmitter: readonly id, provider, endpoint, state, mode, activeMedia. Control: accept(opts?), reject(reason?), hangup(reason?), upgradeMode(newMode), upgradeMedia(newMedia[]). Media: getMediaStream(type): MediaSource | null; sendMedia(data: MediaSource, type): Promise<void>. Text: sendText(msg, opts?), onText(cb). Agent: getAgentBridge(): AgentBridge. Events: on('state', cb), on('media', cb), on('error', cb), on('text', cb)."
       },
       {
         "id": "types-4",
         "title": "src/interfaces/agent-bridge.ts — AgentBridge, STTProvider, TTSProvider",
-        "status": "proposed",
+        "status": "active",
         "narrative": "FR-5. AgentBridge: onVoiceInput(cb: (transcript, confidence, meta?) => void): void; onVideoFrame?(cb): void; injectTTS(text, opts?): Promise<void>; injectAudio(stream: MediaSource): Promise<void>; injectSyntheticVideo?(stream: MediaSource): Promise<void>; setSTTProvider(p: STTProvider): void; setTTSProvider(p: TTSProvider): void. STTProvider: { transcribe(audio: MediaSource): AsyncIterable<{ transcript: string; confidence: number; isFinal: boolean }>; }. TTSProvider: { synthesize(text: string, opts?: TTSOptions): MediaSource; }."
       },
       {
         "id": "types-5",
         "title": "src/interfaces/media-service.ts — MediaService",
-        "status": "proposed",
+        "status": "active",
         "narrative": "MediaService: play(stream: MediaSource): Promise<void>; record(opts?: RecordOptions): Promise<Recording>; collect(opts: CollectOptions): Promise<CollectionResult>. RecordOptions = { maxDurationMs?: number; format?: 'wav' | 'opus' }. CollectOptions = { maxSilenceMs: number; maxDurationMs: number; dtmf?: boolean }. CollectionResult = { audio: MediaSource; dtmf?: string; timedOut: boolean }."
       },
       {
         "id": "types-6",
         "title": "src/errors.ts — CallError",
-        "status": "proposed",
+        "status": "active",
         "narrative": "FR-8. CallError extends Error: code: 'timeout' | 'rejected' | 'media-failure' | 'unauthorized' | 'group-full'. Constructor takes code and optional message. Static factory helpers: CallError.timeout(), CallError.rejected(reason?), etc."
       },
       {
         "id": "types-7",
         "title": "src/index.ts — barrel export",
-        "status": "proposed",
+        "status": "active",
         "narrative": "Export all public types, interfaces, and errors. No implementation exports from the barrel. Ensures consumers import from @openclaw/voice-sdk without reaching into internal paths."
       },
       {
         "id": "types-8",
         "title": "test/types.test.ts — structural type compatibility tests",
-        "status": "proposed",
+        "status": "active",
         "narrative": "Type-only tests using satisfies keyword to confirm mock objects satisfy VoiceProvider, Call, AgentBridge. Verifies no DOM types leak (import.meta check). Tests compile with strict: true."
       }
     ]
