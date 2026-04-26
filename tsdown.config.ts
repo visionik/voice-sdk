@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: "src/index.ts",
     "providers/mock/index": "src/providers/mock/index.ts",
+    "providers/whatsapp/index": "src/providers/whatsapp/index.ts",
   },
   outDir: "dist",
   format: "esm",

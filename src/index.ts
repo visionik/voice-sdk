@@ -23,6 +23,13 @@ export type { CallErrorCode } from "./errors.js";
 // Agent bridge (concrete implementation)
 export { BaseAgentBridge } from "./agent-bridge/base-agent-bridge.js";
 
+// WhatsApp provider types (interface + events — no baileys dependency)
+export type {
+  WhatsAppCallEvent,
+  WhatsAppCallStateEvent,
+  WhatsAppConnectionManager,
+} from "./providers/whatsapp/connection-manager.js";
+
 // Interfaces
 export type { AgentBridge, STTProvider, TTSProvider } from "./interfaces/agent-bridge.js";
 export type { Call } from "./interfaces/call.js";
