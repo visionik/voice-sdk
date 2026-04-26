@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "MockVoiceProvider and AgentBridge",
-    "status": "active",
+    "status": "completed",
     "narrative": {
       "Summary": "Implement MockVoiceProvider (for deterministic test simulation) and the BaseAgentBridge class (the pluggable STT/TTS bridge). MockVoiceProvider gives developers and tests full programmatic control over call lifecycle without any real network. BaseAgentBridge provides the runtime wiring between STT/TTS providers and a Call's media streams. Together these validate the full SDK contract before any real provider is written.",
       "Traces": "FR-5 (AgentBridge runtime), FR-7 (MockVoiceProvider), NFR-1 (>=85% coverage — this scope provides the test harness for all subsequent scopes)",
@@ -18,37 +18,37 @@
       {
         "id": "mock-1",
         "title": "src/providers/mock/mock-call.ts — MockCall implementation",
-        "status": "active",
+        "status": "completed",
         "narrative": "Implements Call interface. State machine transitions driven by accept/reject/hangup/upgradeMode/upgradeMedia. Emits state/media/error/text events. getMediaStream returns an async generator that yields test buffers on demand. sendMedia records sent chunks for test assertions. getAgentBridge returns the attached BaseAgentBridge instance."
       },
       {
         "id": "mock-2",
         "title": "src/providers/mock/mock-voice-provider.ts — MockVoiceProvider",
-        "status": "active",
+        "status": "completed",
         "narrative": "FR-7. Implements VoiceProvider. createCall and joinGroupCall create MockCall instances. triggerIncoming(endpoint, options?) fires registered onCall handlers simulating an inbound call. simulateStateChange(callId, state) transitions a call externally. simulateVoiceInput(callId, transcript, confidence?) triggers the AgentBridge onVoiceInput callback. Maintains internal call registry."
       },
       {
         "id": "mock-3",
         "title": "src/agent-bridge/base-agent-bridge.ts — BaseAgentBridge",
-        "status": "active",
+        "status": "completed",
         "narrative": "FR-5. Implements AgentBridge. Holds optional sttProvider and ttsProvider references (set via setSTTProvider/setTTSProvider). onVoiceInput wires the callback. injectTTS calls ttsProvider.synthesize if set, then calls the Call's sendMedia. injectAudio calls Call's sendMedia directly. Handles no-op gracefully if providers are not set."
       },
       {
         "id": "mock-4",
         "title": "test/mock/mock-call.test.ts — MockCall unit tests",
-        "status": "active",
+        "status": "completed",
         "narrative": "Test all state transitions (initialized→ringing→connecting→connected→held→ended). Test accept/reject/hangup edge cases. Test media stream yields. Test text channel sendText/onText. Test CallError thrown on invalid transitions."
       },
       {
         "id": "mock-5",
         "title": "test/mock/mock-voice-provider.test.ts — MockVoiceProvider unit tests",
-        "status": "active",
+        "status": "completed",
         "narrative": "Test createCall returns MockCall in initialized state. Test triggerIncoming fires onCall. Test simulateStateChange transitions calls. Test simulateVoiceInput fires onVoiceInput on attached bridge."
       },
       {
         "id": "mock-6",
         "title": "test/integration/agent-bridge-round-trip.test.ts — integration test",
-        "status": "active",
+        "status": "completed",
         "narrative": "Full round-trip: create MockVoiceProvider → triggerIncoming → accept call → attach mock STT + mock TTS providers → simulateVoiceInput → verify STT callback fires → call injectTTS → verify TTS synthesize called → verify sendMedia called with synthesized audio. This is the canonical proof that the SDK contract works end-to-end."
       }
     ]
