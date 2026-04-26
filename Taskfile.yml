@@ -13,9 +13,14 @@ tasks:
       - task --list
 
   build:
-    desc: Build the SDK with tsdown
+    desc: Build the SDK with tsdown (library + CLI)
     cmds:
       - pnpm run build
+      - |
+        CLI=dist/cli/index.mjs
+        if [ -f "$CLI" ] && ! head -1 "$CLI" | grep -q '^#!'; then
+          printf '#!/usr/bin/env node\n' | cat - "$CLI" > "$CLI.tmp" && mv "$CLI.tmp" "$CLI"
+        fi
 
   typecheck:
     desc: Type-check without emitting

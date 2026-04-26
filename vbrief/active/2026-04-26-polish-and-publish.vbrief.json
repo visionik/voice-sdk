@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "Polish and Publish",
-    "status": "proposed",
+    "status": "active",
     "narrative": {
       "Summary": "Final polish pass before the first npm release: complete README with API reference and usage examples (voice/video/agent-bridge), fill CHANGELOG with v0.1.0 entry, configure npm publish (provenance, access:public, .npmignore), run npm publish dry-run to verify the package output, and confirm importability from a test consumer. Conventional Commits enforced throughout.",
       "Traces": "NFR-5 (Conventional Commits), NFR-6 (npm publish as @openclaw/voice-sdk)",
@@ -18,25 +18,25 @@
       {
         "id": "publish-1",
         "title": "README.md — complete API documentation",
-        "status": "proposed",
+        "status": "active",
         "narrative": "Sections: About (telecom-sense note, voice/video/screen/data), Install, Quick Start (incoming call with MockProvider + AgentBridge), API Reference (VoiceProvider, Call, AgentBridge, MediaSource, CallOptions, CallError), Provider Guide (WhatsAppVoiceProvider + DI setup), Testing Guide (MockVoiceProvider usage), Contributing."
       },
       {
         "id": "publish-2",
         "title": "CHANGELOG.md — v0.1.0 entry",
-        "status": "proposed",
+        "status": "active",
         "narrative": "Follow Keep a Changelog format. v0.1.0 entry: Added VoiceProvider/Call/AgentBridge interfaces, MockVoiceProvider, WhatsAppVoiceProvider (DI), BaseAgentBridge, CLI harness, CallError, MediaService. Note telecom-sense naming."
       },
       {
         "id": "publish-3",
         "title": "npm publish configuration",
-        "status": "proposed",
+        "status": "active",
         "narrative": ".npmignore: exclude src/, test/, vbrief/, directive/, *.config.ts, Taskfile.yml. package.json: publishConfig.access=public, provenance if using npm provenance. Add task release to Taskfile: runs task check, then npm publish --dry-run (gate requiring --live flag to actually publish)."
       },
       {
         "id": "publish-4",
         "title": "test/consumer/index.ts — import smoke test",
-        "status": "proposed",
+        "status": "active",
         "narrative": "Minimal file: import { MockVoiceProvider, type Call, type VoiceProvider } from '@openclaw/voice-sdk'. Compile this file against the published dist/ to verify type declarations resolve. Run as part of task check via tsc --noEmit."
       }
     ]

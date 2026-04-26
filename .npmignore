@@ -1,0 +1,29 @@
+# Source and test directories — not needed by consumers
+src/
+test/
+cli/
+vbrief/
+directive/
+coverage/
+.artifacts/
+
+# Config files — not needed at runtime
+tsconfig*.json
+tsdown.config.ts
+vitest.config.ts
+.oxlintrc.json
+Taskfile.yml
+.npmrc
+.github/
+
+# Build tool cache
+*.tsbuildinfo
+
+# Dev secrets and local overrides
+secrets/
+*.local
+.env
+.env.*
+
+# Migration backups
+.premigrate.*
