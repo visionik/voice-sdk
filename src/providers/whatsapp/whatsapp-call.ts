@@ -161,6 +161,36 @@ export class WhatsAppCall extends EventEmitter implements Call {
     this.on("text", callback);
   }
 
+  onAudio(callback: (stream: MediaSource) => void): void {
+    // Deliver the existing queue if audio is already active.
+    const existing = this._mediaQueues.get("audio");
+    if (existing) {
+      callback(existing);
+      return;
+    }
+    // Otherwise, wait for activation (single-consumer until media-pipeline tee).
+    this.on("media", (type: MediaType, active: boolean) => {
+      if (type === "audio" && active) {
+        const q = this._mediaQueues.get("audio");
+        if (q) callback(q);
+      }
+    });
+  }
+
+  onVideo(callback: (stream: MediaSource) => void): void {
+    const existing = this._mediaQueues.get("video");
+    if (existing) {
+      callback(existing);
+      return;
+    }
+    this.on("media", (type: MediaType, active: boolean) => {
+      if (type === "video" && active) {
+        const q = this._mediaQueues.get("video");
+        if (q) callback(q);
+      }
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Agent bridge
   // -------------------------------------------------------------------------

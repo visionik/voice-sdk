@@ -134,6 +134,25 @@ export interface Call extends EventEmitter {
    */
   onText(callback: (msg: CallTextMessage) => void): void;
 
+  /**
+   * Subscribe to inbound audio. Fires when the audio channel activates,
+   * delivering an independent {@link MediaSource} stream to consume.
+   *
+   * Multiple subscribers each receive their own independent stream
+   * (fan-out via {@link MulticastMediaQueue} — see media-pipeline scope).
+   *
+   * @param callback - Called with a fresh `MediaSource` when audio is active.
+   */
+  onAudio(callback: (stream: MediaSource) => void): void;
+
+  /**
+   * Subscribe to inbound video. Fires when the video channel activates,
+   * delivering an independent {@link MediaSource} stream to consume.
+   *
+   * @param callback - Called with a fresh `MediaSource` when video is active.
+   */
+  onVideo(callback: (stream: MediaSource) => void): void;
+
   // -------------------------------------------------------------------------
   // Agent bridge
   // -------------------------------------------------------------------------

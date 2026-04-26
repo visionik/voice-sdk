@@ -159,6 +159,28 @@ export class MockCall extends EventEmitter implements Call {
     this.on("text", callback);
   }
 
+  onAudio(callback: (stream: MediaSource) => void): void {
+    // If audio is already active, deliver a stream immediately.
+    if (this._activeMedia.has("audio")) {
+      callback(MockCall._makeTestStream("audio"));
+      return;
+    }
+    // Otherwise, wait for the audio channel to activate.
+    this.on("media", (type: MediaType, active: boolean) => {
+      if (type === "audio" && active) callback(MockCall._makeTestStream("audio"));
+    });
+  }
+
+  onVideo(callback: (stream: MediaSource) => void): void {
+    if (this._activeMedia.has("video")) {
+      callback(MockCall._makeTestStream("video"));
+      return;
+    }
+    this.on("media", (type: MediaType, active: boolean) => {
+      if (type === "video" && active) callback(MockCall._makeTestStream("video"));
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Call interface — agent bridge
   // -------------------------------------------------------------------------
