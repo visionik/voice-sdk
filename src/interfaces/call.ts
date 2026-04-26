@@ -125,7 +125,7 @@ export interface Call extends EventEmitter {
    * @param message           - The message body.
    * @param options.mentions  - Optional list of participant IDs to mention.
    */
-  sendText(message: string, options?: { mentions?: string[] }): Promise<void>;
+  text(message: string, options?: { mentions?: string[] }): Promise<void>;
 
   /**
    * Register a callback for incoming text messages.

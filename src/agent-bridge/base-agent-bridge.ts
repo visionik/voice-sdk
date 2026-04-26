@@ -27,7 +27,6 @@ export class BaseAgentBridge implements AgentBridge {
   private readonly _voiceInputCallbacks: Array<
     (transcript: string, confidence: number, metadata?: unknown) => void
   > = [];
-  private readonly _videoFrameCallbacks: Array<(frame: Buffer, timestamp: number) => void> = [];
 
   /**
    * @param call - The call this bridge is attached to.
@@ -41,11 +40,6 @@ export class BaseAgentBridge implements AgentBridge {
     callback: (transcript: string, confidence: number, metadata?: unknown) => void,
   ): void {
     this._voiceInputCallbacks.push(callback);
-  }
-
-  /** @inheritdoc */
-  onFrame(callback: (frame: Buffer, timestamp: number) => void): void {
-    this._videoFrameCallbacks.push(callback);
   }
 
   /** @inheritdoc */
@@ -94,17 +88,6 @@ export class BaseAgentBridge implements AgentBridge {
   _triggerVoiceInput(transcript: string, confidence: number, metadata?: unknown): void {
     for (const cb of this._voiceInputCallbacks) {
       cb(transcript, confidence, metadata);
-    }
-  }
-
-  /**
-   * Dispatch a video frame to all registered `onFrame` callbacks.
-   *
-   * @internal
-   */
-  _triggerVideoFrame(frame: Buffer, timestamp: number): void {
-    for (const cb of this._videoFrameCallbacks) {
-      cb(frame, timestamp);
     }
   }
 }

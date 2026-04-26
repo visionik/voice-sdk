@@ -175,9 +175,9 @@ describe("MockCall text channel", () => {
     expect(msgs).toEqual(["hello"]);
   });
 
-  it("sendText resolves without error", async () => {
+  it("text resolves without error", async () => {
     const call = makeCall();
-    await expect(call.sendText("hi")).resolves.toBeUndefined();
+    await expect(call.text("hi")).resolves.toBeUndefined();
   });
 });
 

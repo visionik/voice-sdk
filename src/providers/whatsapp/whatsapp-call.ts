@@ -152,7 +152,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
   // Text channel
   // -------------------------------------------------------------------------
 
-  async sendText(_message: string, _options?: { mentions?: string[] }): Promise<void> {
+  async text(_message: string, _options?: { mentions?: string[] }): Promise<void> {
     // Text channel within a WhatsApp call is not yet implemented in the SDK.
     // Placeholder for future extension.
   }

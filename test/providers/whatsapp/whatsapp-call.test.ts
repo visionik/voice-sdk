@@ -254,8 +254,8 @@ describe("WhatsAppCall media streams", () => {
 // ---------------------------------------------------------------------------
 
 describe("WhatsAppCall text channel", () => {
-  it("sendText resolves without error", async () => {
-    await expect(makeCall().call.sendText("hello")).resolves.toBeUndefined();
+  it("text resolves without error", async () => {
+    await expect(makeCall().call.text("hello")).resolves.toBeUndefined();
   });
 
   it("onText fires when text event is emitted internally", () => {

@@ -150,7 +150,7 @@ export class MockCall extends EventEmitter implements Call {
   // Call interface — text channel
   // -------------------------------------------------------------------------
 
-  async sendText(_message: string, _options?: { mentions?: string[] }): Promise<void> {
+  async text(_message: string, _options?: { mentions?: string[] }): Promise<void> {
     // No-op: outbound text from the mock call side; tests use _simulateText
     // to push inbound text messages.
   }

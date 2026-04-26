@@ -71,14 +71,6 @@ export interface AgentBridge {
   ): void;
 
   /**
-   * Register a callback that fires for each incoming video frame.
-   * Only available when the call has an active `"video"` media stream.
-   *
-   * @param callback - Receives the raw frame buffer and a UTC timestamp.
-   */
-  onFrame?(callback: (frame: Buffer, timestamp: number) => void): void;
-
-  /**
    * Synthesise `text` via the current TTS provider and inject it into the call.
    *
    * @param text    - Text to speak.
