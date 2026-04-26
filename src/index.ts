@@ -20,6 +20,9 @@ export type {
 export { CallError } from "./errors.js";
 export type { CallErrorCode } from "./errors.js";
 
+// Agent bridge (concrete implementation)
+export { BaseAgentBridge } from "./agent-bridge/base-agent-bridge.js";
+
 // Interfaces
 export type { AgentBridge, STTProvider, TTSProvider } from "./interfaces/agent-bridge.js";
 export type { Call } from "./interfaces/call.js";
