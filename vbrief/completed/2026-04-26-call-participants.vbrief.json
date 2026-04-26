@@ -7,7 +7,7 @@
   },
   "plan": {
     "title": "Call Participants: participants, onJoin, onLeave, onSpeaking, raise/lower",
-    "status": "active",
+    "status": "completed",
     "narrative": {
       "Summary": "Adds participant awareness to the Call interface — essential for group calls and meetings. An AI agent needs to know who is in the call, who just joined or left, and who is actively speaking (so it knows when to listen vs speak). Also adds raise()/lower() as meeting-specific signalling that a well-behaved agent should support. All items are defined in the Call interface with MockCall + MockVoiceProvider implementations and tests. Real provider implementations are stubs.",
       "Traces": "NFR-1 (>=85% coverage)",
@@ -18,31 +18,31 @@
       {
         "id": "part-1",
         "title": "src/types.ts — add Participant type",
-        "status": "active",
+        "status": "completed",
         "narrative": "Participant = { id: string; name?: string; endpoint: Endpoint; muted: boolean; hasVideo: boolean; }. Exported from src/index.ts. Represents a single party in a multi-participant call or meeting."
       },
       {
         "id": "part-2",
         "title": "src/interfaces/call.ts — add participants, onJoin, onLeave, onSpeaking, raise, lower",
-        "status": "active",
+        "status": "completed",
         "narrative": "readonly participants: ReadonlyArray<Participant> — current participant list (excludes self). onJoin(cb: (p: Participant) => void): void — fires when someone joins. onLeave(cb: (p: Participant, reason?: string) => void): void — fires when someone leaves. onSpeaking(cb: (p: Participant, isSpeaking: boolean) => void): void — fires when active speaker changes (VAD). raise(): Promise<void> — raise hand. lower(): Promise<void> — lower hand."
       },
       {
         "id": "part-3",
         "title": "src/providers/mock/mock-call.ts — implement participants and events",
-        "status": "active",
+        "status": "completed",
         "narrative": "_participants: Participant[] maintained internally. participants getter returns readonly view. onJoin/onLeave/onSpeaking register callbacks stored in callback arrays. raise()/lower() no-op Promises."
       },
       {
         "id": "part-4",
         "title": "src/providers/mock/mock-voice-provider.ts — add participant simulation helpers",
-        "status": "active",
+        "status": "completed",
         "narrative": "triggerJoin(callId, participant): adds to call's participants, fires onJoin. triggerLeave(callId, participantId, reason?): removes from list, fires onLeave. triggerSpeaking(callId, participantId, isSpeaking): fires onSpeaking. These mirror the existing speak()/setState() pattern for deterministic testing."
       },
       {
         "id": "part-5",
         "title": "Tests: test/mock/call-participants.test.ts",
-        "status": "active",
+        "status": "completed",
         "narrative": "Initial participants is empty. triggerJoin adds to list and fires callback. triggerLeave removes and fires callback. Multiple join events accumulate. triggerSpeaking fires with correct participant and boolean. raise()/lower() resolve without error. onJoin callback receives correct Participant shape."
       }
     ]
