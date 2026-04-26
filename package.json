@@ -58,6 +58,9 @@
     "test:coverage": "vitest run --coverage",
     "check": "pnpm run lint && pnpm run fmt:check && pnpm run typecheck && pnpm run build && pnpm run test"
   },
+  "dependencies": {
+    "commander": "^14.0.3"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.4",
