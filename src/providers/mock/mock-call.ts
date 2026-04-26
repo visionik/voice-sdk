@@ -128,7 +128,7 @@ export class MockCall extends EventEmitter implements Call {
   // Call interface — media
   // -------------------------------------------------------------------------
 
-  stream(type: MediaType): MediaSource | null {
+  receive(type: MediaType): MediaSource | null {
     if (!this._activeMedia.has(type)) return null;
     return MockCall._makeTestStream(type);
   }

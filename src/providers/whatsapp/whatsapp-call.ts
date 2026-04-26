@@ -135,7 +135,7 @@ export class WhatsAppCall extends EventEmitter implements Call {
   // Media
   // -------------------------------------------------------------------------
 
-  stream(type: MediaType): MediaSource | null {
+  receive(type: MediaType): MediaSource | null {
     return this._mediaQueues.get(type) ?? null;
   }
 

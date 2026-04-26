@@ -103,20 +103,20 @@ describe("MockCall state machine", () => {
 
 describe("MockCall media", () => {
   it("stream returns null for inactive type", () => {
-    expect(makeCall().stream("audio")).toBeNull();
+    expect(makeCall().receive("audio")).toBeNull();
   });
 
   it("stream returns a stream after accept()", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    const stream = call.stream("audio");
+    const stream = call.receive("audio");
     expect(stream).not.toBeNull();
   });
 
   it("stream stream yields Buffer chunks", async () => {
     const call = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    const stream = call.stream("audio");
+    const stream = call.receive("audio");
     const chunks: Buffer[] = [];
     for await (const chunk of stream!) {
       chunks.push(chunk);

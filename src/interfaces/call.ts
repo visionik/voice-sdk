@@ -104,7 +104,7 @@ export interface Call extends EventEmitter {
    * @param type - The media type to retrieve.
    * @returns A {@link MediaSource} stream, or `null` if that type is not active.
    */
-  stream(type: MediaType): MediaSource | null;
+  receive(type: MediaType): MediaSource | null;
 
   /**
    * Send an outbound media stream into the call.

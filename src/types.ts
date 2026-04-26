@@ -42,7 +42,7 @@ export type EndpointType = "whatsapp" | "phone" | "discord" | "sip" | "webrtc";
  *
  * @example
  * ```ts
- * for await (const chunk of call.stream('audio') ?? []) {
+ * for await (const chunk of call.receive('audio') ?? []) {
  *   processAudioChunk(chunk);
  * }
  * ```

@@ -208,20 +208,20 @@ describe("WhatsAppCall external state changes", () => {
 
 describe("WhatsAppCall media streams", () => {
   it("stream returns null before accept", () => {
-    expect(makeCall().call.stream("audio")).toBeNull();
+    expect(makeCall().call.receive("audio")).toBeNull();
   });
 
   it("stream returns a stream after accept", async () => {
     const { call } = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
-    expect(call.stream("audio")).not.toBeNull();
+    expect(call.receive("audio")).not.toBeNull();
   });
 
   it("pushed audio chunks can be read from the stream", async () => {
     const { call, manager } = makeCall();
     await call.accept({ mediaTypes: ["audio"] });
 
-    const stream = call.stream("audio");
+    const stream = call.receive("audio");
     expect(stream).not.toBeNull();
 
     // Push a chunk and then end the stream
