@@ -9,17 +9,20 @@ Provider-agnostic, media-rich, agent-first call SDK for [OpenClaw](https://githu
 
 ## Overview
 
-`@openclaw/voice-sdk` is the missing `Call` abstraction layer for OpenClaw. It defines a shared contract that all channel providers (WhatsApp, Twilio, Discord, WebRTC) implement and that AI agents consume via a standardised `AgentBridge`. Inspired by [Voxeo Moho](https://github.com/voxeolabs/moho).
+`@openclaw/voice-sdk` defines one `Call` abstraction for real-time communication across transports. Providers such as WhatsApp, SIP, Google Meet, Discord, or WebRTC implement `VoiceProvider`; agents interact with the same `Call` and `AgentBridge` regardless of the transport.
+
+This repository also includes [`voice-sdk.md`](./voice-sdk.md), an early proposal document for API naming, scope, and OpenClaw integration. The README reflects the currently implemented TypeScript interfaces.
 
 **Key concepts:**
 
-| Concept                 | Description                                                               |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `VoiceProvider`         | Channel-specific factory; creates and manages `Call` instances            |
-| `Call`                  | Full lifecycle (ringing → connected → ended), media streams, text channel |
-| `AgentBridge`           | Pluggable STT/TTS bridge attached to every `Call` for AI agents           |
-| `WhatsAppVoiceProvider` | Reference implementation; uses a shared WASocket via DI                   |
-| `MockVoiceProvider`     | Deterministic test harness — no real network required                     |
+| Concept | Description |
+| --- | --- |
+| `VoiceProvider` | Transport factory for dialing or joining calls |
+| `Call` | Stateful real-time session with lifecycle, media, text, telephony controls, and participant signals |
+| `AgentBridge` | Agent-facing bridge for STT, TTS, text, and future vision integration |
+| `MediaSource` | Node-native `AsyncIterable<Buffer>` media stream; no DOM dependency in core |
+| `WhatsAppVoiceProvider` | Reference provider using an injected `WhatsAppConnectionManager` |
+| `MockVoiceProvider` | Deterministic in-memory provider for tests and local agent logic |
 
 ## Install
 
@@ -31,53 +34,90 @@ Requires **Node.js ≥ 22**.
 
 ## Quick Start
 
-### Simulate an incoming call (testing)
+### Test an agent with `MockVoiceProvider`
 
 ```ts
 import { MockVoiceProvider } from "@openclaw/voice-sdk/providers/mock";
 
 const provider = new MockVoiceProvider();
+const call = provider.ring({ type: "whatsapp", id: "+15550001234" });
 
-provider.onCall(async (call) => {
-  console.log("Incoming from", call.endpoint.id);
-  await call.accept({ mediaTypes: ["audio"] });
+console.log("Incoming from", call.endpoint.id);
 
-  const bridge = call.getAgentBridge();
-  bridge.onVoiceInput((transcript) => {
-    console.log("User said:", transcript);
-    void bridge.injectTTS(`You said: ${transcript}`);
-  });
+await call.accept({ mediaTypes: ["audio"] });
+
+call.agent.onHeard(async (transcript) => {
+  console.log("User said:", transcript);
+  await call.agent.say(`You said: ${transcript}`);
 });
 
-// Simulate an inbound call in tests:
-const call = provider.triggerIncoming({ type: "whatsapp", id: "+15550001234" });
-provider.simulateVoiceInput(call.id, "hello world");
+provider.speak(call.id, "hello world");
 ```
 
-### Connect to WhatsApp (production)
+### Dial or join with a provider
+
+```ts
+const outbound = await provider.dial(
+  { type: "phone", id: "+15550001234" },
+  { mediaTypes: ["audio"], mode: "full-duplex" },
+);
+
+outbound.on("state", (state) => {
+  console.log("call state:", state);
+});
+
+const meeting = await provider.join("group-or-room-id", {
+  mediaTypes: ["audio"],
+  mode: "listen-only",
+});
+
+meeting.on("state", async (state) => {
+  if (state !== "connected") return;
+
+  await meeting.mode("talkback");
+  await meeting.agent.say("I can summarize what I heard.");
+  await meeting.mode("listen-only");
+});
+```
+
+### Connect to WhatsApp
 
 ```ts
 import { WhatsAppVoiceProvider } from "@openclaw/voice-sdk/providers/whatsapp";
 import type { WhatsAppConnectionManager } from "@openclaw/voice-sdk/providers/whatsapp";
 
-// Your WhatsApp extension implements WhatsAppConnectionManager:
+// Your WhatsApp extension owns the underlying WASocket and implements this.
 declare const manager: WhatsAppConnectionManager;
 
-const provider = new WhatsAppVoiceProvider(manager); // registers once — no new socket
+const provider = new WhatsAppVoiceProvider(manager);
 
 provider.onCall(async (call) => {
-  await call.accept();
-  const bridge = call.getAgentBridge();
-  bridge.setSTTProvider(mySTT);
-  bridge.setTTSProvider(myTTS);
-  bridge.onVoiceInput(async (transcript) => {
+  await call.accept({ mediaTypes: ["audio"] });
+
+  call.agent.ear(mySTT);
+  call.agent.mouth(myTTS);
+
+  call.agent.onHeard(async (transcript) => {
     const reply = await myLLM.complete(transcript);
-    await bridge.injectTTS(reply);
+    await call.agent.say(reply);
   });
 });
 ```
 
 ## API Reference
+
+### Core types
+
+| Type | Values / Shape |
+| --- | --- |
+| `MediaType` | `"audio"`, `"video"`, `"screen"`, `"data"` |
+| `CallState` | `"initialized"`, `"ringing"`, `"connecting"`, `"connected"`, `"held"`, `"ended"`, `"failed"` |
+| `CallMode` | `"listen-only"`, `"talkback"`, `"full-duplex"` |
+| `CallDirection` | `"inbound"`, `"outbound"` |
+| `DtmfTone` | `"0"`–`"9"`, `"*"`, `"#"`, `"A"`–`"D"` |
+| `MediaSource` | `AsyncIterable<Buffer>` |
+| `Endpoint` | `{ type: EndpointType; id: string; metadata?: Record<string, unknown> }` |
+| `Participant` | `{ id; name?; endpoint; muted; hasVideo }` |
 
 ### `VoiceProvider`
 
@@ -85,11 +125,14 @@ provider.onCall(async (call) => {
 interface VoiceProvider {
   readonly name: string;
   readonly supportedMedia: readonly MediaType[];
-  createCall(endpoint: Endpoint, options?: CallOptions): Promise<Call>;
-  joinGroupCall(groupId: string, options?: CallOptions): Promise<Call>;
-  setConnectionManager?(manager: unknown): void;
+
+  dial(endpoint: Endpoint, options?: CallOptions): Promise<Call>;
+  join(groupId: string, options?: CallOptions): Promise<Call>;
+  connect?(manager: unknown): void;
 }
 ```
+
+`VoiceProvider` is the transport abstraction. A provider starts outbound calls with `dial()` and joins group calls or meetings with `join()`. Provider implementations may expose additional subscription methods for inbound calls, such as `onCall()` on the mock and WhatsApp providers.
 
 ### `Call`
 
@@ -98,47 +141,107 @@ interface Call extends EventEmitter {
   readonly id: string;
   readonly provider: string;
   readonly endpoint: Endpoint;
-  readonly state: CallState; // 'initialized' | 'ringing' | 'connecting' | 'connected' | 'held' | 'ended' | 'failed'
-  readonly mode: CallMode; // 'listen-only' | 'talkback' | 'full-duplex'
-  readonly activeMedia: ReadonlySet<MediaType>;
+  readonly state: CallState;
+  readonly direction: CallDirection;
+  readonly duration: number;
+  readonly participants: ReadonlyArray<Participant>;
+  readonly agent: AgentBridge;
 
-  // Control
   accept(options?: { mediaTypes?: MediaType[] }): Promise<void>;
   reject(reason?: string): Promise<void>;
   hangup(reason?: string): Promise<void>;
-  upgradeMode(newMode: CallMode): Promise<void>;
-  upgradeMedia(newMedia: MediaType[]): Promise<void>;
 
-  // Media  (Node-native, no DOM dependency)
-  getMediaStream(type: MediaType): MediaSource | null; // MediaSource = AsyncIterable<Buffer>
-  sendMedia(data: MediaSource, type: MediaType): Promise<void>;
+  hold(): Promise<void>;
+  resume(): Promise<void>;
+  mute(type: MediaType): Promise<void>;
+  unmute(type: MediaType): Promise<void>;
+  muted(): ReadonlySet<MediaType>;
+  transfer(endpoint: Endpoint): Promise<void>;
+  dtmf(tone: DtmfTone): Promise<void>;
+  onDTMF(callback: (tone: DtmfTone) => void): void;
 
-  // Text channel
-  sendText(message: string, options?: { mentions?: string[] }): Promise<void>;
+  mode(): CallMode;
+  mode(newMode: CallMode): Promise<void>;
+  channels(): ReadonlySet<MediaType>;
+  channels(newMedia: MediaType[]): Promise<void>;
+
+  receive(type: MediaType): MediaSource | null;
+  send(data: MediaSource, type: MediaType): Promise<void>;
+  onAudio(callback: (stream: MediaSource) => void): void;
+  onVideo(callback: (stream: MediaSource) => void): void;
+
+  text(message: string, options?: { mentions?: string[] }): Promise<void>;
   onText(callback: (msg: CallTextMessage) => void): void;
 
-  // Agent
-  getAgentBridge(): AgentBridge;
-
-  // Typed events
-  on(event: "state", listener: (state: CallState) => void): this;
-  on(event: "media", listener: (type: MediaType, active: boolean) => void): this;
-  on(event: "error", listener: (error: Error) => void): this;
-  on(event: "text", listener: (msg: CallTextMessage) => void): this;
+  onJoin(callback: (participant: Participant) => void): void;
+  onLeave(callback: (participant: Participant, reason?: string) => void): void;
+  onSpeaking(callback: (participant: Participant, isSpeaking: boolean) => void): void;
+  raise(): Promise<void>;
+  lower(): Promise<void>;
 }
 ```
+
+Lifecycle transitions are:
+
+```text
+initialized → ringing → connecting → connected ↔ held → ended
+                                                       → failed
+```
+
+`mode()` controls transmit behavior. `channels()` controls which media types are active. For example, an agent can start in `listen-only`, upgrade to `talkback` when summoned, and add a video channel later with `channels(["audio", "video"])`.
 
 ### `AgentBridge`
 
 ```ts
 interface AgentBridge {
-  onVoiceInput(
-    callback: (transcript: string, confidence: number, metadata?: unknown) => void,
-  ): void;
-  injectTTS(text: string, options?: TTSOptions): Promise<void>;
-  injectAudio(stream: MediaSource): Promise<void>;
-  setSTTProvider(provider: STTProvider): void;
-  setTTSProvider(provider: TTSProvider): void;
+  onHeard(callback: (transcript: string, confidence: number, metadata?: unknown) => void): void;
+  say(text: string, options?: TTSOptions): Promise<void>;
+
+  ear(): STTProvider | undefined;
+  ear(provider: STTProvider): void;
+
+  mouth(): TTSProvider | undefined;
+  mouth(provider: TTSProvider): void;
+
+  eyes(): VisionProvider | undefined;
+  eyes(provider: VisionProvider): void;
+
+  onSeen(callback: (description: string, timestamp: number) => void): void;
+  onRead(callback: (msg: CallTextMessage) => void): void;
+}
+```
+
+`AgentBridge` is attached as `call.agent`. It gives agents consistent senses and outputs:
+
+| Method | Purpose |
+| --- | --- |
+| `ear(stt)` | Set speech-to-text provider |
+| `onHeard(cb)` | Receive speech transcripts |
+| `mouth(tts)` | Set text-to-speech provider |
+| `say(text)` | Speak into the call |
+| `eyes(vision)` | Set future video/vision provider |
+| `onRead(cb)` | Receive in-call text messages |
+
+### Provider interfaces
+
+```ts
+interface STTProvider {
+  transcribe(audio: MediaSource): AsyncIterable<{
+    transcript: string;
+    confidence: number;
+    isFinal: boolean;
+  }>;
+}
+
+interface TTSProvider {
+  synthesize(text: string, options?: TTSOptions): MediaSource;
+}
+
+interface VisionProvider {
+  describe(frames: AsyncIterable<{ frame: Buffer; timestamp: number }>): AsyncIterable<{
+    description: string;
+    timestamp: number;
+  }>;
 }
 ```
 
@@ -160,74 +263,129 @@ class CallError extends Error {
 
 ```ts
 type CallOptions = {
-  mediaTypes: MediaType[]; // Which media to activate
-  mode: CallMode; // Participation mode
+  mediaTypes: MediaType[];
+  mode: CallMode;
   quality?: "low" | "standard" | "hd";
   autoJoin?: boolean;
   record?: boolean;
-  retryPolicy?: RetryPolicy; // { maxAttempts, backoffMs }
+  retryPolicy?: RetryPolicy;
 };
+```
+
+## Telephony and meeting controls
+
+The `Call` interface includes controls needed by PSTN, SIP, WebRTC, and meeting-style providers:
+
+| Capability | API |
+| --- | --- |
+| Hold/resume | `hold()`, `resume()` |
+| Mute/unmute local media | `mute(type)`, `unmute(type)`, `muted()` |
+| Blind transfer | `transfer(endpoint)` |
+| IVR / touch-tone navigation | `dtmf(tone)`, `onDTMF(cb)` |
+| Meeting participation | `mode()`, `raise()`, `lower()` |
+| Participants | `participants`, `onJoin()`, `onLeave()`, `onSpeaking()` |
+| Reactive media | `onAudio()`, `onVideo()` |
+
+Example IVR navigation:
+
+```ts
+await call.dtmf("1"); // press 1 for sales
+call.onDTMF((tone) => {
+  console.log("remote pressed:", tone);
+});
+```
+
+Example human escalation:
+
+```ts
+call.agent.onHeard(async (text) => {
+  if (sentiment.isAngry(text)) {
+    await call.agent.say("Let me transfer you to a specialist.");
+    await call.transfer({ type: "sip", id: "support@example.com" });
+  }
+});
 ```
 
 ## WhatsApp Provider Guide
 
-The `WhatsAppVoiceProvider` implements `VoiceProvider` and wraps a `WhatsAppConnectionManager` — the interface your WhatsApp extension must implement.
+`WhatsAppVoiceProvider` implements `VoiceProvider` and wraps a `WhatsAppConnectionManager` supplied by the OpenClaw WhatsApp extension.
 
-**Single-socket contract:** constructing `WhatsAppVoiceProvider(manager)` calls `manager.registerVoiceProvider(this)` exactly once. No second WASocket is opened.
+The connection manager owns the underlying WASocket. The SDK does not import Baileys or open a second socket.
 
 ```ts
-// packages/whatsapp-extension/src/connection-manager.ts
-import type { WhatsAppConnectionManager } from "@openclaw/voice-sdk/providers/whatsapp";
+import type { VoiceProvider } from "@openclaw/voice-sdk";
+import type {
+  WhatsAppCallEvent,
+  WhatsAppCallStateEvent,
+  WhatsAppConnectionManager,
+} from "@openclaw/voice-sdk/providers/whatsapp";
 
-export class WaBaileysManager implements WhatsAppConnectionManager {
-  constructor(private socket: WASocket) {
-    socket.ev.on("call", (events) => {
-      /* ... */
-    });
+class WaBaileysManager implements WhatsAppConnectionManager {
+  register(provider: VoiceProvider): void {
+    // Route existing socket events to this provider.
   }
-  registerVoiceProvider(provider) {
-    /* ... */
+
+  onCall(cb: (event: WhatsAppCallEvent) => void): void {
+    // Subscribe cb to WASocket call events.
   }
-  answerCall(callId, opts) {
-    return this.socket.rejectCall(callId, 0); /* answer */
+
+  onState(cb: (event: WhatsAppCallStateEvent) => void): void {
+    // Subscribe cb to call state changes.
   }
-  // ...
+
+  async answer(callId: string, opts?: { video?: boolean }): Promise<void> {}
+  async reject(callId: string, reason?: string): Promise<void> {}
+  async end(callId: string): Promise<void> {}
+  async join(groupJid: string, opts?: { video?: boolean }): Promise<void> {}
+  async send(callId: string, chunk: Buffer): Promise<void> {}
 }
 ```
 
 ## Testing Guide
 
-Use `MockVoiceProvider` for all agent/call logic tests. No network required.
+Use `MockVoiceProvider` for agent and call-logic tests. No network is required.
 
 ```ts
 import { MockVoiceProvider } from "@openclaw/voice-sdk/providers/mock";
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
 
 const provider = new MockVoiceProvider();
-const call = provider.triggerIncoming({ type: "whatsapp", id: "+1234" });
-await call.accept();
+const call = provider.ring({ type: "whatsapp", id: "+1234" });
 
-// Simulate speech and assert TTS was called
+await call.accept({ mediaTypes: ["audio"] });
+
 const ttsSpy = vi.fn((_text: string) =>
   (async function* () {
     yield Buffer.from("tts");
   })(),
 );
-call.getAgentBridge().setTTSProvider({ synthesize: ttsSpy });
 
-provider.simulateVoiceInput(call.id, "book me a flight");
-await new Promise((r) => setImmediate(r)); // flush async callbacks
+call.agent.mouth({ synthesize: ttsSpy });
+call.agent.onHeard(async (transcript) => {
+  await call.agent.say(`You said: ${transcript}`);
+});
 
-expect(ttsSpy).toHaveBeenCalledWith(expect.stringContaining("flight"), undefined);
+provider.speak(call.id, "book me a flight");
+await new Promise((resolve) => setImmediate(resolve));
+
+expect(ttsSpy).toHaveBeenCalledWith("You said: book me a flight", undefined);
+expect(call.sent()).toHaveLength(1);
 ```
 
-Key `MockVoiceProvider` methods:
+Useful `MockVoiceProvider` helpers:
 
-| Method                                                | Purpose                                            |
-| ----------------------------------------------------- | -------------------------------------------------- |
-| `triggerIncoming(endpoint, opts?)`                    | Simulate an inbound call (fires `onCall` handlers) |
-| `simulateStateChange(callId, state)`                  | Force a call into any state                        |
-| `simulateVoiceInput(callId, transcript, confidence?)` | Deliver a transcript to `AgentBridge.onVoiceInput` |
+| Method | Purpose |
+| --- | --- |
+| `ring(endpoint, opts?)` | Simulate an inbound call and fire `onCall` handlers |
+| `dial(endpoint, opts?)` | Create an outbound mock call |
+| `join(groupId, opts?)` | Create a mock group/meeting call |
+| `setState(callId, state)` | Force a lifecycle state |
+| `speak(callId, transcript, confidence?)` | Fire `call.agent.onHeard()` callbacks |
+| `triggerJoin(callId, participant)` | Add a participant and fire `onJoin()` |
+| `triggerLeave(callId, participantId, reason?)` | Remove a participant and fire `onLeave()` |
+| `triggerSpeaking(callId, participantId, isSpeaking)` | Fire `onSpeaking()` |
+
+`MockCall` also records outbound media and DTMF for assertions via helper methods such as `sent()` and `sentDTMF()`.
 
 ## CLI Developer Harness
 
@@ -241,6 +399,26 @@ npx openclaw-voice dial --to whatsapp:+15550001234
 # Full options:
 npx openclaw-voice --help
 ```
+
+## Current status
+
+Implemented today:
+
+- Core types and interfaces
+- `Call` lifecycle, media, text, control, DTMF, participant, and meeting-signal surface
+- `AgentBridge` with STT/TTS provider hooks and future vision hooks
+- `MockVoiceProvider` and `MockCall`
+- `WhatsAppVoiceProvider` and `WhatsAppConnectionManager` integration contract
+- CLI developer harness
+
+Pending or provider-specific:
+
+- Google Meet provider package
+- Media fan-out / multicast queue for multiple independent consumers
+- Automatic STT wiring from `call.agent.ear(stt)` to call audio
+- VAD / turn detection
+- Chat context and interruption handling
+- Provider-native implementations for hold, transfer, and DTMF where the transport supports them
 
 ## Development
 
